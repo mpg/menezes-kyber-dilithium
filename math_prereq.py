@@ -99,3 +99,44 @@ class Pol:
             for j, b in enumerate(other.c):
                 c[i + j] += a * b
         return Pol(self.q, c)
+
+    def deg(self):
+        """Degree of the polynomial."""
+        # Note the degree of the 0 polynomial is undefined,
+        # we chose to return -1 for simplicity's sake.
+        return len(self.c) - 1
+
+    def __mod__(self, other):
+        """Remainder in the Euclidean division of self by other.
+
+        This is the unique polynomial R such that:
+        (1) self - R is a multiple of other, and
+        (2) deg(R) < deg(other).
+
+        For simplicity's sake, require other to be unitary (leading
+        coefficient == 1), otherwise we'd need to implement division for
+        ModInts, which is not hard but useless for our purposes.
+        """
+        if len(other.c) == 0:
+            raise ZeroDivisionError
+        if other.c[-1] != ModInt(1, self.q):
+            raise NotImplementedError
+
+        # We start with R == self and we'll subtract multiples of self;
+        # that way (1) (from the dosctring) is a loop invariant.
+        # At each iteration we cancel the leading term of R, decreasing its
+        # degree; this is the loop variant, and (2) is the exit condition.
+        r = Pol(self.q, self.c)
+        while r.deg() >= other.deg():
+            print("R", r)
+            # Set f = a X^n where a is R's leading coefficient,
+            # and n is such that f * other has the same degree as R.
+            a = r.c[-1]
+            n = r.deg() - other.deg()
+            f = Pol(self.q, [ModInt(0, self.q)] * n + [a])
+            print("f", f)
+
+            r = r - f * other
+
+        print("R", r)
+        return r

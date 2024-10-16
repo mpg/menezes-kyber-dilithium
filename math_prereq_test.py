@@ -61,3 +61,10 @@ class PolTest(unittest.TestCase):
         p = Pol(7, [2, 1, 6, 2, 3, 6])
         self.assertEqual(f * g, p)
         self.assertEqual(g * f, p)
+
+    def test_mod(self):
+        # Example from slide 26
+        h = Pol(41, [24, 19, 16, 24, 26, 25, 22])
+        m = Pol(41, [1, 0, 0, 0, 1])
+        r = Pol(41, [39, 35, 35, 24])
+        self.assertEqual(h % m, r)
