@@ -1,6 +1,9 @@
 import unittest
 
-from math_prereq import ModInt
+from math_prereq import (
+    ModInt,
+    Pol,
+)
 
 
 class ModIntTest(unittest.TestCase):
@@ -20,3 +23,41 @@ class ModIntTest(unittest.TestCase):
 
     def test_mul(self):
         self.assertEqual(ModInt(9, 17) * ModInt(15, 17), ModInt(16, 17))
+
+
+class PolTest(unittest.TestCase):
+    def test_equal(self):
+        self.assertEqual(
+            Pol(7, [1, 2, 3]), Pol(7, [ModInt(1, 7), ModInt(2, 7), ModInt(3, 7)])
+        )
+
+        self.assertEqual(Pol(7, [1, 2, 3]), Pol(7, [8, -5, 3]))
+        self.assertEqual(Pol(7, [1, 2, 3]), Pol(7, [1, 2, 3, 0, 0]))
+
+        self.assertEqual(Pol(7, [0]), Pol(7, []))
+
+        self.assertNotEqual(Pol(7, [1, 2, 3]), Pol(7, [1, 2, 4]))
+        self.assertNotEqual(Pol(7, [1, 2, 3]), Pol(7, [1, 2]))
+
+    def test_add(self):
+        # Example from slide 24
+        f = Pol(7, [5, 0, 4, 3])
+        g = Pol(7, [6, 3, 2])
+        s = Pol(7, [4, 3, 6, 3])
+        self.assertEqual(f + g, s)
+        self.assertEqual(g + f, s)
+
+    def test_sub(self):
+        # Example from slide 24
+        f = Pol(7, [5, 0, 4, 3])
+        g = Pol(7, [6, 3, 2])
+        d = Pol(7, [6, 4, 2, 3])
+        self.assertEqual(f - g, d)
+
+    def test_mul(self):
+        # Example from slide 24
+        f = Pol(7, [5, 0, 4, 3])
+        g = Pol(7, [6, 3, 2])
+        p = Pol(7, [2, 1, 6, 2, 3, 6])
+        self.assertEqual(f * g, p)
+        self.assertEqual(g * f, p)
