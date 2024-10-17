@@ -13,6 +13,12 @@ Things are naturally arranged in layers, each building on the previous one:
     2. Pol: polynomial with Mod(int) coefficients (slide 24)
     3. Mod(Pol): polynomial modulo X^n + 1 (slides 25-27)
     4. Vec: vectors of polynomials (slides 28-29)
+
+There are at least two natural ways of constructing the modular polynomials
+we'll need. The first, above, is the same as for modular integers; it's the
+most generic and doesn't rely on the special form of the modulus. The second,
+implemented in ModPol, fuses layers 2 and 3 above and takes advantage of the
+special form of the modulus to combine multiplication with modular reduction.
 """
 
 
@@ -137,3 +143,62 @@ class Pol:
             r = r - f * other
 
         return r
+
+
+class ModPol:
+    """Elements of R_q (slides 25-27), integrated implementation."""
+
+    def __init__(self, q, n, c):
+        """Build the polynomial c[0] + c[1] X + ... + c[n-1] X^n-1 mod X^n + 1.
+
+        The coefficients can be passed either as a list of n Mod(int)
+        or a list of n integers."""
+        if len(c) != n:
+            raise ValueError
+
+        if not isinstance(c[0], Mod):
+            self.c = [Mod(a, q) for a in c]
+        else:
+            self.c = c[:]
+        self.q = q
+        self.n = n
+
+    def __repr__(self):
+        """Represent self."""
+        return f"ModPol({self.q}, {self.n}, {self.c})"
+
+    def __eq__(self, other):
+        """Compare to another ModPol."""
+        return self.q == other.q and self.n == other.n and self.c == other.c
+
+    def __add__(self, other):
+        """Add another ModPol."""
+        c = [a + b for a, b in zip(self.c, other.c)]
+        # No need to reduce mod X^n + 1, the degree didn't increase
+        return ModPol(self.q, self.n, c)
+
+    def __sub__(self, other):
+        """Subtract another ModPol."""
+        c = [a - b for a, b in zip(self.c, other.c)]
+        # No need to reduce mod X^n + 1, the degree didn't increase
+        return ModPol(self.q, self.n, c)
+
+    def __mul__(self, other):
+        """Multiply by another ModPol."""
+        c = [Mod(0, self.q)] * self.n
+        for i, a in enumerate(self.c):
+            for j, b in enumerate(other.c):
+                p = a * b
+                k = i + j
+                # Immediately reduce mod X^n + 1: if we would add p*X^k,
+                # then instead subtract p*X^{k-n} since mod X^n + 1 we have:
+                #   X^n + 1 == 0
+                #   X^n == -1
+                #   X^n * X^{k-n} == -1 * X^{k-n}
+                #   X^k == - X^{k-n}
+                # (that's the 4th bullet on slide 26).
+                if k >= self.n:
+                    c[k - self.n] -= p
+                else:
+                    c[k] += p
+        return ModPol(self.q, self.n, c)

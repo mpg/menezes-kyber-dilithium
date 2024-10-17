@@ -3,6 +3,7 @@ import unittest
 from math_prereq import (
     Mod,
     Pol,
+    ModPol,
 )
 
 
@@ -107,5 +108,43 @@ class ModPolGenTest(unittest.TestCase):
         f = Mod(Pol(41, [32, 0, 17, 22]), m)
         g = Mod(Pol(41, [11, 7, 19, 1]), m)
         r = Mod(Pol(41, [39, 35, 35, 24]), m)
+        self.assertEqual(f * g, r)
+        self.assertEqual(g * f, r)
+
+
+class ModPolTest(unittest.TestCase):
+    def test_equal(self):
+        r0 = ModPol(41, 4, [39, 35, 35, 24])
+        r1 = ModPol(41, 4, [-2, 35, -6, 24])
+        self.assertEqual(r0, r1)
+
+        # wrong leading coefficient
+        r2 = ModPol(41, 4, [39, 35, 35, 25])
+        self.assertNotEqual(r0, r2)
+
+    def test_add(self):
+        # Example from slide 26
+        f = ModPol(41, 4, [32, 0, 17, 22])
+        g = ModPol(41, 4, [11, 7, 19, 1])
+        # result computed manually
+        s = ModPol(41, 4, [2, 7, 36, 23])
+        self.assertEqual(f + g, s)
+        self.assertEqual(g + f, s)
+
+    def test_sub(self):
+        # Example from slide 26
+        f = ModPol(41, 4, [32, 0, 17, 22])
+        g = ModPol(41, 4, [11, 7, 19, 1])
+        # results computed manually
+        d1 = ModPol(41, 4, [21, 34, 39, 21])
+        d2 = ModPol(41, 4, [-21, -34, -39, -21])
+        self.assertEqual(f - g, d1)
+        self.assertEqual(g - f, d2)
+
+    def test_mul(self):
+        # Example from slide 26
+        f = ModPol(41, 4, [32, 0, 17, 22])
+        g = ModPol(41, 4, [11, 7, 19, 1])
+        r = ModPol(41, 4, [39, 35, 35, 24])
         self.assertEqual(f * g, r)
         self.assertEqual(g * f, r)
