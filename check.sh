@@ -4,7 +4,8 @@ set -eu
 
 pytest-3
 
-black --target-version py310 --check *.py
+# Don't just check, fix (despite this script's name)
+black --target-version py310 *.py
 
 pyflakes3 *.py
 

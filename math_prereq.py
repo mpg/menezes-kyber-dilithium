@@ -4,20 +4,20 @@ Implement objects mentionned in V1b Mathematical Prerequisites.
 This is an obvious implementation whose goal is to be readable.
 When possible, the same notations as in the slides are used.
 
-Not coded in a defensive way; for example all operations on ModInt could raise
-ValueError if the other value is not a ModInt with the same modulus. I chose
+Not coded in a defensive way; for example all operations on Mod could raise
+ValueError if the other value is not a Mod with the same modulus. I chose
 not to clutter the code as this just a support for learning.
 
 Things are naturally arranged in layers, each building on the previous one:
-    1. ModInt: modular integers (slide 23)
-    2. Pol: polynomial with ModInt coefficients (slide 24)
-    3. ModPol: polynomial modulo X^n + 1 (slides 25-27)
+    1. Mod(int): modular integers (slide 23)
+    2. Pol: polynomial with Mod(int) coefficients (slide 24)
+    3. Mod(Pol): polynomial modulo X^n + 1 (slides 25-27)
     4. Vec: vectors of polynomials (slides 28-29)
 """
 
 
-class ModInt:
-    """Modular integer (slide 23)."""
+class Mod:
+    """Modular integer (slide 23) or polynomial (slides 25-27)."""
 
     def __init__(self, r, q):
         """Build r mod q."""
@@ -26,42 +26,42 @@ class ModInt:
 
     def __repr__(self):
         """Represent self."""
-        return f"ModInt({self.r}, {self.q})"
+        return f"Mod({self.r}, {self.q})"
 
     def __eq__(self, other):
-        """Compare to another ModInt."""
+        """Compare to another Mod."""
         return self.r == other.r and self.q == other.q
 
     def __add__(self, other):
-        """Add another ModInt."""
-        return ModInt(self.r + other.r, self.q)
+        """Add another Mod."""
+        return Mod(self.r + other.r, self.q)
 
     def __sub__(self, other):
-        """Subtract another ModInt."""
-        return ModInt(self.r - other.r, self.q)
+        """Subtract another Mod."""
+        return Mod(self.r - other.r, self.q)
 
     def __mul__(self, other):
-        """Multiply by another ModInt."""
-        return ModInt(self.r * other.r, self.q)
+        """Multiply by another Mod."""
+        return Mod(self.r * other.r, self.q)
 
 
 class Pol:
-    """Polynomial with ModInt coefficients (slide 24)."""
+    """Polynomial with Mod(int) coefficients (slide 24)."""
 
     def __init__(self, q, c):
         """Build the polynomial c[0] + c[1] X + ... + c[n-1] X^n-1.
 
-        The coefficients can be passed either as a list of ModInt
+        The coefficients can be passed either as a list of Mod(int)
         or a list of integers."""
-        if len(c) != 0 and not isinstance(c[0], ModInt):
-            self.c = [ModInt(a, q) for a in c]
+        if len(c) != 0 and not isinstance(c[0], Mod):
+            self.c = [Mod(a, q) for a in c]
         else:
             self.c = c[:]
         self.q = q
 
         # Normalize: leading coefficient must not be 0.
         # (Convention: the 0 polynomial is represented with self.c == [].)
-        while len(self.c) != 0 and self.c[-1] == ModInt(0, self.q):
+        while len(self.c) != 0 and self.c[-1] == Mod(0, self.q):
             self.c.pop()
 
     def __repr__(self):
@@ -78,7 +78,7 @@ class Pol:
         for a in self.c:
             yield a
         for _ in range(n - len(self.c)):
-            yield ModInt(0, self.q)
+            yield Mod(0, self.q)
 
     def __add__(self, other):
         """Add another Pol."""
@@ -94,7 +94,7 @@ class Pol:
 
     def __mul__(self, other):
         """Multiply by another Pol."""
-        c = [ModInt(0, self.q)] * (len(self.c) + len(other.c))
+        c = [Mod(0, self.q)] * (len(self.c) + len(other.c))
         for i, a in enumerate(self.c):
             for j, b in enumerate(other.c):
                 c[i + j] += a * b
@@ -115,11 +115,11 @@ class Pol:
 
         For simplicity's sake, require other to be unitary (leading
         coefficient == 1), otherwise we'd need to implement division for
-        ModInts, which is not hard but useless for our purposes.
+        Mod(int)s, which is not hard but useless for our purposes.
         """
         if len(other.c) == 0:
             raise ZeroDivisionError
-        if other.c[-1] != ModInt(1, self.q):
+        if other.c[-1] != Mod(1, self.q):
             raise NotImplementedError
 
         # We start with R == self and we'll subtract multiples of self;
@@ -128,15 +128,12 @@ class Pol:
         # degree; this is the loop variant, and (2) is the exit condition.
         r = Pol(self.q, self.c)
         while r.deg() >= other.deg():
-            print("R", r)
             # Set f = a X^n where a is R's leading coefficient,
             # and n is such that f * other has the same degree as R.
             a = r.c[-1]
             n = r.deg() - other.deg()
-            f = Pol(self.q, [ModInt(0, self.q)] * n + [a])
-            print("f", f)
+            f = Pol(self.q, [Mod(0, self.q)] * n + [a])
 
             r = r - f * other
 
-        print("R", r)
         return r
