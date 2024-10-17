@@ -4,6 +4,7 @@ from math_prereq import (
     Mod,
     Pol,
     ModPol,
+    Vec,
 )
 
 
@@ -122,6 +123,10 @@ class ModPolTest(unittest.TestCase):
         r2 = ModPol(41, 4, [39, 35, 35, 25])
         self.assertNotEqual(r0, r2)
 
+        # wrong integer modulus
+        r3 = ModPol(43, 4, [39, 35, 35, 25])
+        self.assertNotEqual(r0, r3)
+
     def test_add(self):
         # Example from slide 26
         f = ModPol(41, 4, [32, 0, 17, 22])
@@ -148,3 +153,46 @@ class ModPolTest(unittest.TestCase):
         r = ModPol(41, 4, [39, 35, 35, 24])
         self.assertEqual(f * g, r)
         self.assertEqual(g * f, r)
+
+
+class VecTest(unittest.TestCase):
+    # Example from slide 29
+    a = Vec(
+        ModPol(137, 4, [93, 51, 34, 54]),
+        ModPol(137, 4, [27, 87, 81, 6]),
+        ModPol(137, 4, [112, 15, 46, 122]),
+    )
+    b = Vec(
+        ModPol(137, 4, [40, 78, 1, 119]),
+        ModPol(137, 4, [11, 31, 57, 90]),
+        ModPol(137, 4, [108, 72, 47, 14]),
+    )
+    s = Vec(
+        ModPol(137, 4, [133, 129, 35, 36]),
+        ModPol(137, 4, [38, 118, 1, 96]),
+        ModPol(137, 4, [83, 87, 93, 136]),
+    )
+    d = Vec(
+        ModPol(137, 4, [53, 110, 33, 72]),
+        ModPol(137, 4, [16, 56, 24, 53]),
+        ModPol(137, 4, [4, 80, 136, 108]),
+    )
+    p = ModPol(137, 4, [93, 59, 44, 132])
+
+    def test_equal(self):
+        self.assertEqual(self.a, self.a)
+        self.assertEqual(self.b, self.b)
+
+        self.assertNotEqual(self.a, self.b)
+        self.assertNotEqual(self.b, self.a)
+
+    def test_add(self):
+        self.assertEqual(self.a + self.b, self.s)
+        self.assertEqual(self.b + self.a, self.s)
+
+    def test_sub(self):
+        self.assertEqual(self.a - self.b, self.d)
+
+    def test_mul(self):
+        self.assertEqual(self.a * self.b, self.p)
+        self.assertEqual(self.b * self.a, self.p)

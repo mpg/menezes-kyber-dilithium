@@ -153,7 +153,7 @@ class ModPol:
 
         The coefficients can be passed either as a list of n Mod(int)
         or a list of n integers."""
-        if len(c) != n:
+        if len(c) != n or n == 0:
             raise ValueError
 
         if not isinstance(c[0], Mod):
@@ -169,7 +169,8 @@ class ModPol:
 
     def __eq__(self, other):
         """Compare to another ModPol."""
-        return self.q == other.q and self.n == other.n and self.c == other.c
+        # Comparison of q and n are implied by comparing coefficients
+        return self.c == other.c
 
     def __add__(self, other):
         """Add another ModPol."""
@@ -202,3 +203,34 @@ class ModPol:
                 else:
                     c[k] += p
         return ModPol(self.q, self.n, c)
+
+
+class Vec:
+    """Element of R_q^k, ie vector of ModPols (slide 28)."""
+
+    def __init__(self, *v):
+        """Build a vector given a list of k ModPols."""
+        self.v = tuple(v)
+
+    def __repr__(self):
+        """Represent self."""
+        return f"Vec({self.v})"
+
+    def __eq__(self, other):
+        """Compare to another Vec."""
+        return self.v == other.v
+
+    def __add__(self, other):
+        """Add another Vec."""
+        v = [a + b for a, b in zip(self.v, other.v)]
+        return Vec(*v)
+
+    def __sub__(self, other):
+        """Subtract another Vec."""
+        v = [a - b for a, b in zip(self.v, other.v)]
+        return Vec(*v)
+
+    def __mul__(self, other):
+        """Dot-product with another Vec; result is a ModPol"""
+        zero = self.v[0] - self.v[0] # get the 0 ModPol(q, n)
+        return sum((a * b for a, b in zip(self.v, other.v)), start=zero)
