@@ -50,6 +50,13 @@ class Mod:
         """Multiply by another Mod."""
         return Mod(self.r * other.r, self.q)
 
+    def size(self):
+        """Size of self (slide 33)."""
+        if isinstance(self.r, int):
+            return min(self.r, self.q - self.r)
+        # If the base type is not int, assume it defines its own size.
+        return self.r.size()
+
 
 class Pol:
     """Polynomial with Mod(int) coefficients (slide 24)."""
@@ -105,6 +112,10 @@ class Pol:
             for j, b in enumerate(other.c):
                 c[i + j] += a * b
         return Pol(self.q, c)
+
+    def size(self):
+        """Size of self (slide 33)."""
+        return max((c.size() for c in self.c))
 
     def deg(self):
         """Degree of the polynomial."""
@@ -204,6 +215,10 @@ class ModPol:
                     c[k] += p
         return ModPol(self.q, self.n, c)
 
+    def size(self):
+        """Size of self (slide 33)."""
+        return max((c.size() for c in self.c))
+
 
 class Vec:
     """Element of R_q^k, ie vector of ModPols (slide 28)."""
@@ -232,5 +247,9 @@ class Vec:
 
     def __mul__(self, other):
         """Dot-product with another Vec; result is a ModPol"""
-        zero = self.v[0] - self.v[0] # get the 0 ModPol(q, n)
+        zero = self.v[0] - self.v[0]  # get the 0 ModPol(q, n)
         return sum((a * b for a, b in zip(self.v, other.v)), start=zero)
+
+    def size(self):
+        """Size of self (slide 33)."""
+        return max((f.size() for f in self.v))

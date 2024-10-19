@@ -26,6 +26,18 @@ class ModIntTest(unittest.TestCase):
     def test_mul(self):
         self.assertEqual(Mod(9, 17) * Mod(15, 17), Mod(16, 17))
 
+    def test_size(self):
+        self.assertEqual(Mod(0, 4).size(), 0)
+        self.assertEqual(Mod(1, 4).size(), 1)
+        self.assertEqual(Mod(2, 4).size(), 2)
+        self.assertEqual(Mod(3, 4).size(), 1)
+
+        self.assertEqual(Mod(0, 5).size(), 0)
+        self.assertEqual(Mod(1, 5).size(), 1)
+        self.assertEqual(Mod(2, 5).size(), 2)
+        self.assertEqual(Mod(3, 5).size(), 2)
+        self.assertEqual(Mod(4, 5).size(), 1)
+
 
 class PolTest(unittest.TestCase):
     def test_equal(self):
@@ -68,6 +80,15 @@ class PolTest(unittest.TestCase):
         m = Pol(41, [1, 0, 0, 0, 1])
         r = Pol(41, [39, 35, 35, 24])
         self.assertEqual(h % m, r)
+
+    def test_size(self):
+        # Example from slide 33
+        f = Pol(19, [1, 12, 0, 3, 0, 18])
+        self.assertEqual(f.size(), 7)
+
+        # Example from slide 34
+        g = Pol(31, [1, 30, 29, 0, 1, 2])
+        self.assertEqual(g.size(), 2)
 
 
 class ModPolGenTest(unittest.TestCase):
@@ -112,6 +133,15 @@ class ModPolGenTest(unittest.TestCase):
         self.assertEqual(f * g, r)
         self.assertEqual(g * f, r)
 
+    def test_size(self):
+        # Examples from slide 35
+        m = Pol(41, [1, 0, 0, 0, 1])
+        f = Mod(Pol(41, [1, 1, -2, 2]), m)
+        g = Mod(Pol(41, [-2, 0, 2, -1]), m)
+        self.assertEqual(f.size(), 2)
+        self.assertEqual(g.size(), 2)
+        self.assertEqual((f * g).size(), 8)
+
 
 class ModPolTest(unittest.TestCase):
     def test_equal(self):
@@ -153,6 +183,14 @@ class ModPolTest(unittest.TestCase):
         r = ModPol(41, 4, [39, 35, 35, 24])
         self.assertEqual(f * g, r)
         self.assertEqual(g * f, r)
+
+    def test_size(self):
+        # Examples from slide 35
+        f = ModPol(41, 4, [1, 1, -2, 2])
+        g = ModPol(41, 4, [-2, 0, 2, -1])
+        self.assertEqual(f.size(), 2)
+        self.assertEqual(g.size(), 2)
+        self.assertEqual((f * g).size(), 8)
 
 
 class VecTest(unittest.TestCase):
@@ -196,3 +234,17 @@ class VecTest(unittest.TestCase):
     def test_mul(self):
         self.assertEqual(self.a * self.b, self.p)
         self.assertEqual(self.b * self.a, self.p)
+
+    def test_size(self):
+        # ModPol examples from slide 35 - let's create vectors out of them.
+        f = ModPol(41, 4, [1, 1, -2, 2])
+        g = ModPol(41, 4, [-2, 0, 2, -1])
+
+        self.assertEqual(Vec(f, g).size(), 2)
+        self.assertEqual(Vec(g, f).size(), 2)
+        self.assertEqual(Vec(f, g, f).size(), 2)
+        self.assertEqual(Vec(g, f, g, f).size(), 2)
+
+        self.assertEqual(Vec(f, g, f * g).size(), 8)
+        self.assertEqual(Vec(f, f * g, g).size(), 8)
+        self.assertEqual(Vec(f * g, f, g).size(), 8)
