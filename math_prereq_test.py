@@ -1,5 +1,7 @@
 import unittest
 
+import math
+
 from math_prereq import (
     Mod,
     Pol,
@@ -192,6 +194,41 @@ class ModPolTest(unittest.TestCase):
         self.assertEqual(f.size(), 2)
         self.assertEqual(g.size(), 2)
         self.assertEqual((f * g).size(), 8)
+
+    def test_kyber_ring_is_not_an_integral_domain(self):
+        # All 3 Kyber/ML-KEM sizes have q = 3329 (a prime number), n = 256.
+        # The resulting ring R_q is not an integral domain, that is,
+        # we can find non-zero elements whose product is zero.
+        #
+        # One way to obtain such elements is the factorisation of
+        # the modulus X^256 + 1 over GF(3329).
+        # All factors happen to be of the form X^2 + c for some constant c.
+        # fmt: off
+        constants = [
+            17, 48, 109, 233, 268, 279, 314, 319,
+            375, 394, 403, 525, 540, 554, 556, 561,
+            568, 583, 641, 642, 667, 680, 723, 733,
+            735, 756, 757, 780, 863, 885, 886, 892,
+            939, 941, 952, 992, 1021, 1026, 1029, 1031,
+            1041, 1063, 1092, 1100, 1143, 1173, 1175, 1179,
+            1212, 1219, 1230, 1239, 1292, 1409, 1455, 1461,
+            1482, 1540, 1584, 1607, 1626, 1637, 1645, 1651,
+            1678, 1684, 1692, 1703, 1722, 1745, 1789, 1847,
+            1868, 1874, 1920, 2037, 2090, 2099, 2110, 2117,
+            2150, 2154, 2156, 2186, 2229, 2237, 2266, 2288,
+            2298, 2300, 2303, 2308, 2337, 2377, 2388, 2390,
+            2437, 2443, 2444, 2466, 2549, 2572, 2573, 2594,
+            2596, 2606, 2649, 2662, 2687, 2688, 2746, 2761,
+            2768, 2773, 2775, 2789, 2804, 2926, 2935, 2954,
+            3010, 3015, 3050, 3061, 3096, 3220, 3281, 3312,
+        ]
+        # fmt: on
+        factors = [ModPol(3329, 256, [c, 0, 1] + [0] * 253) for c in constants]
+
+        zero = ModPol(3329, 256, [0] * 256)
+        one = ModPol(3329, 256, [1] + [0] * 255)
+
+        self.assertEqual(math.prod(factors, start=one), zero)
 
 
 class VecTest(unittest.TestCase):
