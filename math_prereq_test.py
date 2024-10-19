@@ -5,6 +5,7 @@ from math_prereq import (
     Pol,
     ModPol,
     Vec,
+    Mat,
 )
 
 
@@ -248,3 +249,25 @@ class VecTest(unittest.TestCase):
         self.assertEqual(Vec(f, g, f * g).size(), 8)
         self.assertEqual(Vec(f, f * g, g).size(), 8)
         self.assertEqual(Vec(f * g, f, g).size(), 8)
+
+
+class MatTest(unittest.TestCase):
+    def test_mlwe(self):
+        # Example from slide 39
+        def P(*c):
+            return ModPol(541, 4, c)
+
+        a = Mat(
+            Vec(P(442, 502, 513, 15), P(368, 166, 37, 135)),
+            Vec(P(479, 532, 116, 41), P(12, 139, 385, 409)),
+            Vec(P(29, 394, 503, 389), P(9, 499, 92, 254)),
+        )
+        s = Vec(P(2, -2, 0, 1), P(3, -2, -2, -2))
+        e = Vec(P(2, -2, -1, 0), P(1, 2, 2, 1), P(-2, 0, -1, -2))
+        t = Vec(P(30, 252, 401, 332), P(247, 350, 259, 485), P(534, 234, 137, 443))
+
+        self.assertEqual(t, a @ s + e)
+
+        self.assertEqual(s.size(), 3)
+        self.assertEqual(e.size(), 2)
+        self.assertEqual(t.size(), 259)

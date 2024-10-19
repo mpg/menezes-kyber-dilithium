@@ -253,3 +253,20 @@ class Vec:
     def size(self):
         """Size of self (slide 33)."""
         return max((f.size() for f in self.v))
+
+
+class Mat:
+    """Matrix of elements of R_q."""
+
+    def __init__(self, *lines):
+        """Build a matrix given a list of lines (Vec)."""
+        self.lines = tuple(lines)
+
+    def __repr__(self):
+        """Represent self."""
+        return f"Mat({self.lines})"
+
+    def __matmul__(self, vec):
+        """Multiply by a Vec."""
+        v = [l * vec for l in self.lines]
+        return Vec(*v)
