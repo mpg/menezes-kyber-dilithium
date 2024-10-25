@@ -9,10 +9,10 @@ ValueError if the other value is not a Mod with the same modulus. I chose
 not to clutter the code as this just a support for learning.
 
 Things are naturally arranged in layers, each building on the previous one:
-    1. Mod(int): modular integers (slide 23)
-    2. Pol: polynomial with Mod(int) coefficients (slide 24)
-    3. Mod(Pol): polynomial modulo X^n + 1 (slides 25-27)
-    4. Vec: vectors of polynomials (slides 28-29)
+    1. ModInt: modular integers (slide 23)
+    2. Pol: polynomial with ModInt coefficients (slide 24)
+    3. ModPolGen: modular polynomials (slides 25-27)
+    4. Vec: vectors of modular polynomials (slides 28-29)
 
 There are at least two natural ways of constructing the modular polynomials
 we'll need. The first, above, is the same as for modular integers; it's the
@@ -23,7 +23,7 @@ special form of the modulus to combine multiplication with modular reduction.
 
 
 class Mod:
-    """Modular integer (slide 23) or polynomial (slides 25-27)."""
+    """Modular integer or polynomial (base class)."""
 
     def __init__(self, r, q):
         """Build r mod q."""
@@ -32,7 +32,7 @@ class Mod:
 
     def __repr__(self):
         """Represent self."""
-        return f"Mod({self.r}, {self.q})"
+        return f"{self.__class__.__name__}({self.r}, {self.q})"
 
     def __eq__(self, other):
         """Compare to another Mod."""
@@ -40,41 +40,43 @@ class Mod:
 
     def __add__(self, other):
         """Add another Mod."""
-        return Mod(self.r + other.r, self.q)
+        return type(self)(self.r + other.r, self.q)
 
     def __sub__(self, other):
         """Subtract another Mod."""
-        return Mod(self.r - other.r, self.q)
+        return type(self)(self.r - other.r, self.q)
 
     def __mul__(self, other):
         """Multiply by another Mod."""
-        return Mod(self.r * other.r, self.q)
+        return type(self)(self.r * other.r, self.q)
+
+
+# pylint: disable=too-few-public-methods
+class ModInt(Mod):
+    """Modular integer (slide 23)."""
 
     def size(self):
         """Size of self (slide 33)."""
-        if isinstance(self.r, int):
-            return min(self.r, self.q - self.r)
-        # If the base type is not int, assume it defines its own size.
-        return self.r.size()
+        return min(self.r, self.q - self.r)
 
 
 class Pol:
-    """Polynomial with Mod(int) coefficients (slide 24)."""
+    """Polynomial with ModInt coefficients (slide 24)."""
 
     def __init__(self, q, c):
         """Build the polynomial c[0] + c[1] X + ... + c[n-1] X^n-1.
 
-        The coefficients can be passed either as a list of Mod(int)
+        The coefficients can be passed either as a list of ModInt
         or a list of integers."""
-        if len(c) != 0 and not isinstance(c[0], Mod):
-            self.c = [Mod(a, q) for a in c]
+        if len(c) != 0 and not isinstance(c[0], ModInt):
+            self.c = [ModInt(a, q) for a in c]
         else:
             self.c = c[:]
         self.q = q
 
         # Normalize: leading coefficient must not be 0.
         # (Convention: the 0 polynomial is represented with self.c == [].)
-        while len(self.c) != 0 and self.c[-1] == Mod(0, self.q):
+        while len(self.c) != 0 and self.c[-1] == ModInt(0, self.q):
             self.c.pop()
 
     def __repr__(self):
@@ -91,7 +93,7 @@ class Pol:
         for a in self.c:
             yield a
         for _ in range(n - len(self.c)):
-            yield Mod(0, self.q)
+            yield ModInt(0, self.q)
 
     def __add__(self, other):
         """Add another Pol."""
@@ -107,7 +109,7 @@ class Pol:
 
     def __mul__(self, other):
         """Multiply by another Pol."""
-        c = [Mod(0, self.q)] * (len(self.c) + len(other.c))
+        c = [ModInt(0, self.q)] * (len(self.c) + len(other.c))
         for i, a in enumerate(self.c):
             for j, b in enumerate(other.c):
                 c[i + j] += a * b
@@ -132,11 +134,11 @@ class Pol:
 
         For simplicity's sake, require other to be unitary (leading
         coefficient == 1), otherwise we'd need to implement division for
-        Mod(int)s, which is not hard but useless for our purposes.
+        ModInts, which is not hard but useless for our purposes.
         """
         if len(other.c) == 0:
             raise ZeroDivisionError
-        if other.c[-1] != Mod(1, self.q):
+        if other.c[-1] != ModInt(1, self.q):
             raise NotImplementedError
 
         # We start with R == self and we'll subtract multiples of self;
@@ -149,11 +151,20 @@ class Pol:
             # and n is such that f * other has the same degree as R.
             a = r.c[-1]
             n = r.deg() - other.deg()
-            f = Pol(self.q, [Mod(0, self.q)] * n + [a])
+            f = Pol(self.q, [ModInt(0, self.q)] * n + [a])
 
             r = r - f * other
 
         return r
+
+
+# pylint: disable=too-few-public-methods
+class ModPolGen(Mod):
+    """Modular integer (slide 23)."""
+
+    def size(self):
+        """Size of self (slide 33)."""
+        return self.r.size()
 
 
 class ModPol:
@@ -162,13 +173,13 @@ class ModPol:
     def __init__(self, q, n, c):
         """Build the polynomial c[0] + c[1] X + ... + c[n-1] X^n-1 mod X^n + 1.
 
-        The coefficients can be passed either as a list of n Mod(int)
+        The coefficients can be passed either as a list of n ModInt
         or a list of n integers."""
         if len(c) != n or n == 0:
             raise ValueError
 
-        if not isinstance(c[0], Mod):
-            self.c = [Mod(a, q) for a in c]
+        if not isinstance(c[0], ModInt):
+            self.c = [ModInt(a, q) for a in c]
         else:
             self.c = c[:]
         self.q = q
@@ -197,7 +208,7 @@ class ModPol:
 
     def __mul__(self, other):
         """Multiply by another ModPol."""
-        c = [Mod(0, self.q)] * self.n
+        c = [ModInt(0, self.q)] * self.n
         for i, a in enumerate(self.c):
             for j, b in enumerate(other.c):
                 p = a * b

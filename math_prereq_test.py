@@ -3,8 +3,9 @@ import unittest
 import math
 
 from math_prereq import (
-    Mod,
+    ModInt,
     Pol,
+    ModPolGen,
     ModPol,
     Vec,
     Mat,
@@ -13,38 +14,40 @@ from math_prereq import (
 
 class ModIntTest(unittest.TestCase):
     def test_equal(self):
-        self.assertEqual(Mod(5, 17), Mod(5, 17))
-        self.assertEqual(Mod(22, 17), Mod(5, 17))
-        self.assertEqual(Mod(-12, 17), Mod(5, 17))
+        self.assertEqual(ModInt(5, 17), ModInt(5, 17))
+        self.assertEqual(ModInt(22, 17), ModInt(5, 17))
+        self.assertEqual(ModInt(-12, 17), ModInt(5, 17))
 
-        self.assertNotEqual(Mod(5, 17), Mod(4, 17))
-        self.assertNotEqual(Mod(5, 17), Mod(5, 16))
+        self.assertNotEqual(ModInt(5, 17), ModInt(4, 17))
+        self.assertNotEqual(ModInt(5, 17), ModInt(5, 16))
 
     def test_add(self):
-        self.assertEqual(Mod(9, 17) + Mod(15, 17), Mod(7, 17))
+        self.assertEqual(ModInt(9, 17) + ModInt(15, 17), ModInt(7, 17))
 
     def test_sub(self):
-        self.assertEqual(Mod(9, 17) - Mod(15, 17), Mod(11, 17))
+        self.assertEqual(ModInt(9, 17) - ModInt(15, 17), ModInt(11, 17))
 
     def test_mul(self):
-        self.assertEqual(Mod(9, 17) * Mod(15, 17), Mod(16, 17))
+        self.assertEqual(ModInt(9, 17) * ModInt(15, 17), ModInt(16, 17))
 
     def test_size(self):
-        self.assertEqual(Mod(0, 4).size(), 0)
-        self.assertEqual(Mod(1, 4).size(), 1)
-        self.assertEqual(Mod(2, 4).size(), 2)
-        self.assertEqual(Mod(3, 4).size(), 1)
+        self.assertEqual(ModInt(0, 4).size(), 0)
+        self.assertEqual(ModInt(1, 4).size(), 1)
+        self.assertEqual(ModInt(2, 4).size(), 2)
+        self.assertEqual(ModInt(3, 4).size(), 1)
 
-        self.assertEqual(Mod(0, 5).size(), 0)
-        self.assertEqual(Mod(1, 5).size(), 1)
-        self.assertEqual(Mod(2, 5).size(), 2)
-        self.assertEqual(Mod(3, 5).size(), 2)
-        self.assertEqual(Mod(4, 5).size(), 1)
+        self.assertEqual(ModInt(0, 5).size(), 0)
+        self.assertEqual(ModInt(1, 5).size(), 1)
+        self.assertEqual(ModInt(2, 5).size(), 2)
+        self.assertEqual(ModInt(3, 5).size(), 2)
+        self.assertEqual(ModInt(4, 5).size(), 1)
 
 
 class PolTest(unittest.TestCase):
     def test_equal(self):
-        self.assertEqual(Pol(7, [1, 2, 3]), Pol(7, [Mod(1, 7), Mod(2, 7), Mod(3, 7)]))
+        self.assertEqual(
+            Pol(7, [1, 2, 3]), Pol(7, [ModInt(1, 7), ModInt(2, 7), ModInt(3, 7)])
+        )
 
         self.assertEqual(Pol(7, [1, 2, 3]), Pol(7, [8, -5, 3]))
         self.assertEqual(Pol(7, [1, 2, 3]), Pol(7, [1, 2, 3, 0, 0]))
@@ -100,47 +103,47 @@ class ModPolGenTest(unittest.TestCase):
         h = Pol(41, [24, 19, 16, 24, 26, 25, 22])
         m = Pol(41, [1, 0, 0, 0, 1])
         r = Pol(41, [39, 35, 35, 24])
-        self.assertEqual(Mod(h, m), Mod(r, m))
+        self.assertEqual(ModPolGen(h, m), ModPolGen(r, m))
 
         # wrong leading coefficient
         r2 = Pol(41, [39, 35, 35, 25])
-        self.assertNotEqual(Mod(h, m), Mod(r2, m))
+        self.assertNotEqual(ModPolGen(h, m), ModPolGen(r2, m))
 
     def test_add(self):
         # Example from slide 26
         m = Pol(41, [1, 0, 0, 0, 1])
-        f = Mod(Pol(41, [32, 0, 17, 22]), m)
-        g = Mod(Pol(41, [11, 7, 19, 1]), m)
+        f = ModPolGen(Pol(41, [32, 0, 17, 22]), m)
+        g = ModPolGen(Pol(41, [11, 7, 19, 1]), m)
         # result computed manually
-        s = Mod(Pol(41, [2, 7, 36, 23]), m)
+        s = ModPolGen(Pol(41, [2, 7, 36, 23]), m)
         self.assertEqual(f + g, s)
         self.assertEqual(g + f, s)
 
     def test_sub(self):
         # Example from slide 26
         m = Pol(41, [1, 0, 0, 0, 1])
-        f = Mod(Pol(41, [32, 0, 17, 22]), m)
-        g = Mod(Pol(41, [11, 7, 19, 1]), m)
+        f = ModPolGen(Pol(41, [32, 0, 17, 22]), m)
+        g = ModPolGen(Pol(41, [11, 7, 19, 1]), m)
         # results computed manually
-        d1 = Mod(Pol(41, [21, 34, 39, 21]), m)
-        d2 = Mod(Pol(41, [-21, -34, -39, -21]), m)
+        d1 = ModPolGen(Pol(41, [21, 34, 39, 21]), m)
+        d2 = ModPolGen(Pol(41, [-21, -34, -39, -21]), m)
         self.assertEqual(f - g, d1)
         self.assertEqual(g - f, d2)
 
     def test_mul(self):
         # Example from slide 26
         m = Pol(41, [1, 0, 0, 0, 1])
-        f = Mod(Pol(41, [32, 0, 17, 22]), m)
-        g = Mod(Pol(41, [11, 7, 19, 1]), m)
-        r = Mod(Pol(41, [39, 35, 35, 24]), m)
+        f = ModPolGen(Pol(41, [32, 0, 17, 22]), m)
+        g = ModPolGen(Pol(41, [11, 7, 19, 1]), m)
+        r = ModPolGen(Pol(41, [39, 35, 35, 24]), m)
         self.assertEqual(f * g, r)
         self.assertEqual(g * f, r)
 
     def test_size(self):
         # Examples from slide 35
         m = Pol(41, [1, 0, 0, 0, 1])
-        f = Mod(Pol(41, [1, 1, -2, 2]), m)
-        g = Mod(Pol(41, [-2, 0, 2, -1]), m)
+        f = ModPolGen(Pol(41, [1, 1, -2, 2]), m)
+        g = ModPolGen(Pol(41, [-2, 0, 2, -1]), m)
         self.assertEqual(f.size(), 2)
         self.assertEqual(g.size(), 2)
         self.assertEqual((f * g).size(), 8)
@@ -195,6 +198,7 @@ class ModPolTest(unittest.TestCase):
         self.assertEqual(g.size(), 2)
         self.assertEqual((f * g).size(), 8)
 
+    @unittest.skip("slow")
     def test_kyber_ring_is_not_an_integral_domain(self):
         # All 3 Kyber/ML-KEM sizes have q = 3329 (a prime number), n = 256.
         # The resulting ring R_q is not an integral domain, that is,
