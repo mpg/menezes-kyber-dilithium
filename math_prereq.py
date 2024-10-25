@@ -51,13 +51,16 @@ class Mod:
         return type(self)(self.r * other.r, self.q)
 
 
-# pylint: disable=too-few-public-methods
 class ModInt(Mod):
     """Modular integer (slide 23)."""
 
     def size(self):
         """Size of self (slide 33)."""
         return min(self.r, self.q - self.r)
+
+    def round(self):
+        """Rounding (slide 47)."""
+        return int(self.q / 4 <= self.r <= 3 * self.q / 4)
 
 
 class Pol:
@@ -229,6 +232,10 @@ class ModPol:
     def size(self):
         """Size of self (slide 33)."""
         return max((c.size() for c in self.c))
+
+    def round(self):
+        """Rounding (slide 47)."""
+        return [a.round() for a in self.c]
 
 
 class Vec:

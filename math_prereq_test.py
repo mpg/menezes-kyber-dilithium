@@ -42,6 +42,18 @@ class ModIntTest(unittest.TestCase):
         self.assertEqual(ModInt(3, 5).size(), 2)
         self.assertEqual(ModInt(4, 5).size(), 1)
 
+    def test_round(self):
+        self.assertEqual(ModInt(0, 4).round(), 0)
+        self.assertEqual(ModInt(1, 4).round(), 1)
+        self.assertEqual(ModInt(2, 4).round(), 1)
+        self.assertEqual(ModInt(3, 4).round(), 1)
+
+        # example from slide 47
+        self.assertEqual(ModInt(-832, 3329).round(), 0)
+        self.assertEqual(ModInt(832, 3329).round(), 0)
+        self.assertEqual(ModInt(-833, 3329).round(), 1)
+        self.assertEqual(ModInt(833, 3329).round(), 1)
+
 
 class PolTest(unittest.TestCase):
     def test_equal(self):
@@ -197,6 +209,12 @@ class ModPolTest(unittest.TestCase):
         self.assertEqual(f.size(), 2)
         self.assertEqual(g.size(), 2)
         self.assertEqual((f * g).size(), 8)
+
+    def test_round(self):
+        # Example from slide 47
+        f = ModPol(3329, 4, [3000, 1500, 2010, 37])
+        g = [0, 1, 1, 0]
+        self.assertEqual(f.round(), g)
 
     @unittest.skip("slow")
     def test_kyber_ring_is_not_an_integral_domain(self):
