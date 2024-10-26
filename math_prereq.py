@@ -302,7 +302,8 @@ class Vec:
         return Vec(*v)
 
     def __mul__(self, other):
-        """Dot-product with another Vec; result is a ModPol"""
+        """Inner product with another Vec; result is a ModPol (slide 28).
+        Aka dot product or scalar product, denoted a^T b on later slides."""
         zero = self.v[0] - self.v[0]  # get the 0 ModPol(q, n)
         return sum((a * b for a, b in zip(self.v, other.v)), start=zero)
 
@@ -336,3 +337,9 @@ class Mat:
         """Multiply by a Vec."""
         v = [l * vec for l in self.lines]
         return Vec(*v)
+
+    def transpose(self):
+        """Return self's transpose."""
+        m = [vec.v for vec in self.lines]
+        t = [Vec(*[m[j][i] for j in range(len(m))]) for i in range(len(m[0]))]
+        return Mat(*t)

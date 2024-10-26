@@ -467,3 +467,21 @@ class MatTest(unittest.TestCase):
             seen0 |= Mat.rand_uni(q, n, k) == zero
             print(Mat.rand_uni(q, n, k))
         self.assertTrue(seen0)
+
+    def test_transpose(self):
+        a = ModPol(6, 1, [0])
+        b = ModPol(6, 1, [1])
+        c = ModPol(6, 1, [2])
+        d = ModPol(6, 1, [3])
+        e = ModPol(6, 1, [4])
+        f = ModPol(6, 1, [5])
+
+        m1 = Mat(Vec(a, b), Vec(c, d))
+        m2 = Mat(Vec(a, c), Vec(b, d))
+        self.assertEqual(m1.transpose(), m2)
+        self.assertEqual(m2.transpose(), m1)
+
+        m1 = Mat(Vec(a, b, c), Vec(d, e, f))
+        m2 = Mat(Vec(a, d), Vec(b, e), Vec(c, f))
+        self.assertEqual(m1.transpose(), m2)
+        self.assertEqual(m2.transpose(), m1)
