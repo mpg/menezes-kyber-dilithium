@@ -54,6 +54,49 @@ class ModIntTest(unittest.TestCase):
         self.assertEqual(ModInt(-833, 3329).round(), 1)
         self.assertEqual(ModInt(833, 3329).round(), 1)
 
+    def test_rand_uni(self):
+        # Don't actually test the distribution,
+        # only the output range.
+        seen0, seen1, seen2 = 0, 0, 0
+        times = 30
+        for _ in range(times):
+            r = ModInt.rand_uni(3)
+            if r == ModInt(0, 3):
+                seen0 += 1
+            if r == ModInt(1, 3):
+                seen1 += 1
+            if r == ModInt(2, 3):
+                seen2 += 1
+        self.assertNotEqual(seen0, 0)
+        self.assertNotEqual(seen1, 0)
+        self.assertNotEqual(seen2, 0)
+        self.assertEqual(seen0 + seen1 + seen2, times)
+
+    def test_rand_small_uni(self):
+        # Don't actually test the distribution,
+        # only the output range.
+        seen0, seen1, seen2, seenm1, seenm2 = 0, 0, 0, 0, 0
+        times = 50
+        q = 3329
+        for _ in range(times):
+            r = ModInt.rand_small_uni(q, 2)
+            if r == ModInt(0, q):
+                seen0 += 1
+            if r == ModInt(1, q):
+                seen1 += 1
+            if r == ModInt(2, q):
+                seen2 += 1
+            if r == ModInt(-1, q):
+                seenm1 += 1
+            if r == ModInt(-2, q):
+                seenm2 += 1
+        self.assertNotEqual(seen0, 0)
+        self.assertNotEqual(seen1, 0)
+        self.assertNotEqual(seen2, 0)
+        self.assertNotEqual(seenm1, 0)
+        self.assertNotEqual(seenm2, 0)
+        self.assertEqual(seen0 + seen1 + seen2 + seenm1 + seenm2, times)
+
 
 class PolTest(unittest.TestCase):
     def test_equal(self):
@@ -216,6 +259,42 @@ class ModPolTest(unittest.TestCase):
         g = [0, 1, 1, 0]
         self.assertEqual(f.round(), g)
 
+    def test_rand_uni(self):
+        # Don't actually test the distribution,
+        # only the output range.
+        max_size = 0
+        q, n = 17, 8
+        for _ in range(100):
+            f = ModPol.rand_uni(q, n)
+            max_size = max(max_size, f.size())
+        self.assertEqual(max_size, q // 2)
+
+        # Ensure we get objects of the right shape
+        q, n = 3, 2
+        zero = ModPol(q, n, [0, 0])  # proba 1 / 3^2
+        seen0 = False
+        for _ in range(100):
+            seen0 |= ModPol.rand_uni(q, n) == zero
+        self.assertTrue(seen0)
+
+    def test_rand_small_uni(self):
+        # Don't actually test the distribution,
+        # only the output range.
+        max_size = 0
+        q, n, eta = 3329, 8, 3
+        for _ in range(100):
+            f = ModPol.rand_small_uni(q, n, eta)
+            max_size = max(max_size, f.size())
+        self.assertEqual(max_size, eta)
+
+        # Ensure we get objects of the right shape
+        q, n, eta = 3329, 2, 1
+        zero = ModPol(q, n, [0, 0])  # proba 1 / 3^2
+        seen0 = False
+        for _ in range(100):
+            seen0 |= ModPol.rand_small_uni(q, n, eta) == zero
+        self.assertTrue(seen0)
+
     @unittest.skip("slow")
     def test_kyber_ring_is_not_an_integral_domain(self):
         # All 3 Kyber/ML-KEM sizes have q = 3329 (a prime number), n = 256.
@@ -309,6 +388,43 @@ class VecTest(unittest.TestCase):
         self.assertEqual(Vec(f, f * g, g).size(), 8)
         self.assertEqual(Vec(f * g, f, g).size(), 8)
 
+    def test_rand_uni(self):
+        # Don't actually test the distribution,
+        # only the output range.
+        max_size = 0
+        q, n, k = 17, 8, 3
+        for _ in range(30):
+            v = Vec.rand_uni(q, n, k)
+            max_size = max(max_size, v.size())
+        self.assertEqual(max_size, q // 2)
+
+        # Ensure we get objects of the right shape
+        q, n, k = 3, 2, 1
+        zero = Vec(ModPol(q, n, [0, 0]))  # proba 1 / 3^(2*1)
+        seen0 = False
+        for _ in range(100):
+            seen0 |= Vec.rand_uni(q, n, k) == zero
+        self.assertTrue(seen0)
+
+    def test_rand_small_uni(self):
+        # Don't actually test the distribution,
+        # only the output range.
+        max_size = 0
+        q, n, k, eta = 3329, 8, 2, 3
+        for _ in range(50):
+            v = Vec.rand_small_uni(q, n, k, eta)
+            max_size = max(max_size, v.size())
+        self.assertEqual(max_size, eta)
+
+        # Ensure we get objects of the right shape
+        q, n, k, eta = 3329, 3, 2, 1
+        zeropol = ModPol(q, n, [0, 0, 0])  # 1 / 3^3
+        zero = Vec(zeropol, zeropol)  # proba 1 / 3^(3*2) = 1 / 729
+        seen0 = False
+        for _ in range(10000):
+            seen0 |= Vec.rand_small_uni(q, n, k, eta) == zero
+        self.assertTrue(seen0)
+
 
 class MatTest(unittest.TestCase):
     def test_mlwe(self):
@@ -330,3 +446,24 @@ class MatTest(unittest.TestCase):
         self.assertEqual(s.size(), 3)
         self.assertEqual(e.size(), 2)
         self.assertEqual(t.size(), 259)
+
+    def test_rand_uni(self):
+        # Don't actually test the distribution,
+        # only the output range.
+        max_size = 0
+        q, n, k = 17, 8, 3
+        for _ in range(10):
+            m = Mat.rand_uni(q, n, k)
+            sizes = [v.size() for v in m.lines]
+            max_size = max(max_size, *sizes)
+        self.assertEqual(max_size, q // 2)
+
+        # Ensure we get objects of the right shape
+        q, n, k = 3, 2, 1
+        zero = Mat(Vec(ModPol(q, n, [0, 0])))  # proba 1 / 3^(2*1)
+        seen0 = False
+        print(zero)
+        for _ in range(100):
+            seen0 |= Mat.rand_uni(q, n, k) == zero
+            print(Mat.rand_uni(q, n, k))
+        self.assertTrue(seen0)

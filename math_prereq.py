@@ -21,6 +21,8 @@ implemented in ModPol, fuses layers 2 and 3 above and takes advantage of the
 special form of the modulus to combine multiplication with modular reduction.
 """
 
+import secrets
+
 
 class Mod:
     """Modular integer or polynomial (base class)."""
@@ -61,6 +63,18 @@ class ModInt(Mod):
     def round(self):
         """Rounding (slide 47)."""
         return int(self.q / 4 <= self.r <= 3 * self.q / 4)
+
+    @classmethod
+    def rand_uni(cls, q):
+        """Pick a ModInt uniformly at random."""
+        return cls(secrets.randbelow(q), q)
+
+    @classmethod
+    def rand_small_uni(cls, q, eta):
+        """Pick a small (size <= eta) ModInt uniformly at random."""
+        pos = secrets.randbelow(2 * eta + 1)  # [0, 2*eta]
+        sym = pos - eta  # [-eta, eta]
+        return cls(sym, q)
 
 
 class Pol:
@@ -188,6 +202,18 @@ class ModPol:
         self.q = q
         self.n = n
 
+    @classmethod
+    def rand_uni(cls, q, n):
+        """Pick an element of R_q uniformly at random."""
+        c = [ModInt.rand_uni(q) for _ in range(n)]
+        return cls(q, n, c)
+
+    @classmethod
+    def rand_small_uni(cls, q, n, eta):
+        """Pick a small (size <= eta) element of R_q uniformly at random."""
+        c = [ModInt.rand_small_uni(q, eta) for _ in range(n)]
+        return cls(q, n, c)
+
     def __repr__(self):
         """Represent self."""
         return f"ModPol({self.q}, {self.n}, {self.c})"
@@ -245,6 +271,18 @@ class Vec:
         """Build a vector given a list of k ModPols."""
         self.v = tuple(v)
 
+    @classmethod
+    def rand_uni(cls, q, n, k):
+        """Pick an element of R_q^k uniformly at random."""
+        v = [ModPol.rand_uni(q, n) for _ in range(k)]
+        return cls(*v)
+
+    @classmethod
+    def rand_small_uni(cls, q, n, k, eta):
+        """Pick a small (size <= eta) element of R_q^k uniformly at random."""
+        v = [ModPol.rand_small_uni(q, n, eta) for _ in range(k)]
+        return cls(*v)
+
     def __repr__(self):
         """Represent self."""
         return f"Vec({self.v})"
@@ -280,9 +318,19 @@ class Mat:
         """Build a matrix given a list of lines (Vec)."""
         self.lines = tuple(lines)
 
+    @classmethod
+    def rand_uni(cls, q, n, k):
+        """Pick an element of R_q^k*k uniformly at random."""
+        lines = [Vec.rand_uni(q, n, k) for _ in range(k)]
+        return cls(*lines)
+
     def __repr__(self):
         """Represent self."""
         return f"Mat({self.lines})"
+
+    def __eq__(self, other):
+        """Compare to another Mat."""
+        return self.lines == other.lines
 
     def __matmul__(self, vec):
         """Multiply by a Vec."""
