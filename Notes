@@ -1,0 +1,18 @@
+Spec & papers:
+https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.pdf
+https://pq-crystals.org/kyber/resources.shtml
+
+Implementations:
+https://pq-crystals.org/kyber/software.shtml
+https://github.com/PQClean/PQClean
+https://github.com/mupq
+https://github.com/RustCrypto/KEMs/tree/master/ml-kem
+
+Test vectors:
+https://github.com/C2SP/CCTV/tree/main/ML-KEM
+https://www.wolfssl.com/ml-kem-and-ml-dsa-at-the-cavp/
+
+Misc:
+https://words.filippo.io/dispatches/kyber-math/
+
+
