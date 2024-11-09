@@ -21,7 +21,31 @@ implemented in ModPol, fuses layers 2 and 3 above and takes advantage of the
 special form of the modulus to combine multiplication with modular reduction.
 """
 
+import hashlib
 import secrets
+
+
+class XOF:
+    """The XOF wrapper from the spec."""
+
+    def __init__(self):
+        """Create a new XOF context."""
+        self.ctx = hashlib.shake_128()
+        # The hashlib API doesn't have a streaming squeeze() API
+        # so we'll emulate it using digest() and an offset.
+        self.offset = 0
+
+    def absorb(self, data):
+        """Absorb data."""
+        self.ctx.update(data)
+        self.offset = 0
+
+    def squeeze(self, l):
+        """Squeeze the next l bytes out."""
+        # This is very inefficient but it works.
+        out = self.ctx.digest(self.offset + l)[self.offset :]
+        self.offset += l
+        return out
 
 
 class Mod:
@@ -213,6 +237,34 @@ class ModPol:
         """Pick a small (size <= eta) element of R_q uniformly at random."""
         c = [ModInt.rand_small_uni(q, eta) for _ in range(n)]
         return cls(q, n, c)
+
+    @classmethod
+    def from_seed(cls, q, n, B):
+        """Generate pseudo-random element of R_q based on a seed."""
+        # This is essentially Algorithm 7 SampleNTT from the spec.
+        # The algorithm in the spec ouputs 256 elements in Z_q, which are
+        # meant to be interpreted as a polynomial in the NTT domain.
+        # Here we interpret them as a normal polynomial instead because we
+        # haven't implemented NTT yet.
+        #
+        # We accept q and n as parameters but the algorithm only makes sense
+        # if q has the expected bit length.
+        if q.bit_length() != 12:
+            raise ValueError
+
+        ctx = XOF()
+        ctx.absorb(B)
+        a = []
+        while len(a) < n:
+            C = ctx.squeeze(3)
+            d1 = C[0] + 256 * (C[1] % 16)
+            d2 = C[1] // 16 + 16 * C[2]
+            if d1 < q:
+                a.append(d1)
+            if d2 < q and len(a) < n:
+                a.append(d2)
+
+        return cls(q, n, a)
 
     def __repr__(self):
         """Represent self."""
