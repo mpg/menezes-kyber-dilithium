@@ -80,6 +80,10 @@ class Mod:
 class ModInt(Mod):
     """Modular integer (slide 23)."""
 
+    def __int__(self):
+        """Get the representative in [0, q)."""
+        return self.r
+
     def size(self):
         """Size of self (slide 33)."""
         return min(self.r, self.q - self.r)
@@ -250,7 +254,7 @@ class ModPol:
         # We accept q and n as parameters but the algorithm only makes sense
         # if q has the expected bit length.
         if q.bit_length() != 12:
-            raise ValueError
+            raise NotImplementedError
 
         ctx = XOF()
         ctx.absorb(B)
@@ -265,6 +269,21 @@ class ModPol:
                 a.append(d2)
 
         return cls(q, n, a)
+
+    def to_bytes(self):
+        """Serialize, based on ByteEncode_12 from the spec."""
+        if self.q.bit_length() != 12 or self.n % 8 != 0:
+            raise NotImplementedError
+
+        out = bytes()
+        for i in range(0, len(self.c), 2):
+            c1, c2 = int(self.c[i]), int(self.c[i + 1])
+            d1 = c1 % 256
+            d2 = c1 // 256 + 16 * (c2 % 16)
+            d3 = c2 // 16
+            out += d1.to_bytes(1) + d2.to_bytes(1) + d3.to_bytes(1)
+
+        return out
 
     def __repr__(self):
         """Represent self."""
