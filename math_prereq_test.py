@@ -519,3 +519,14 @@ class MatTest(unittest.TestCase):
         m2 = Mat(Vec(a, d), Vec(b, e), Vec(c, f))
         self.assertEqual(m1.transpose(), m2)
         self.assertEqual(m2.transpose(), m1)
+
+    def test_from_seed_and_to_bytes(self):
+        q, n = 3329, 256
+
+        for bits, k in ((512, 2), (768, 3), (1024, 4)):
+            filename = f"ML-KEM-{bits}.txt"
+
+            rho = get(filename, "ρ")
+            exp = get(filename, "A")
+            got = Mat.from_seed(q, n, k, rho).to_bytes()
+            self.assertEqual(got, exp)

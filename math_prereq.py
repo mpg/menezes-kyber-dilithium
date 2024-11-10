@@ -396,6 +396,34 @@ class Mat:
         lines = [Vec.rand_uni(q, n, k) for _ in range(k)]
         return cls(*lines)
 
+    @classmethod
+    def from_seed(cls, q, n, k, rho):
+        """Generate pseudo-random square matrix based on a seed."""
+        # This is lines 3-7 in Algorithm 13 K-PKE.KeyGen or equivalently
+        # lines 4-8 in Algorithm 14 K-PKE.Encrypt in the standard,
+        # except the result is supposed to be interpret it as in the NTT
+        # domain, but we interpret it as normal polynomials instead
+        # because we haven't implementet NTT yet.
+        a = []
+        for i in range(k):
+            a_i = []
+            for j in range(k):
+                B = rho + j.to_bytes(1) + i.to_bytes(1)
+                a_ij = ModPol.from_seed(q, n, B)
+                a_i.append(a_ij)
+            a.append(Vec(*a_i))
+
+        return cls(*a)
+
+    def to_bytes(self):
+        """Serialize (line-wise)."""
+        out = bytes()
+        for line in self.lines:
+            for x in line.v:
+                out += x.to_bytes()
+
+        return out
+
     def __repr__(self):
         """Represent self."""
         return f"Mat({self.lines})"
