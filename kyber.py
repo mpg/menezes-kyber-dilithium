@@ -4,15 +4,17 @@ Implementation of a simplified version of Kyber.
 
 from math_prereq import Vec, Mat, ModPol
 
+# Kyber (all sizes)
 q = 3329
 n = 256
+# Kyber-768
 k = 3
 eta1 = 2
 eta2 = 2
 
 
 def genkey():
-    """Generate a keypair the simplified Kyber-PKE (slide 48)."""
+    """Generate a keypair for simplified Kyber-PKE (slide 48)."""
     A = Mat.rand_uni(q, n, k)
     s = Vec.rand_small_uni(q, n, k, eta1)
     e = Vec.rand_small_uni(q, n, k, eta2)

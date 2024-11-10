@@ -2,8 +2,6 @@ import unittest
 
 from math_prereq import (
     ModInt,
-    Pol,
-    ModPolGen,
     ModPol,
     Vec,
     Mat,
@@ -115,112 +113,6 @@ class ModIntTest(unittest.TestCase):
         self.assertNotEqual(seenm1, 0)
         self.assertNotEqual(seenm2, 0)
         self.assertEqual(seen0 + seen1 + seen2 + seenm1 + seenm2, times)
-
-
-class PolTest(unittest.TestCase):
-    def test_equal(self):
-        self.assertEqual(
-            Pol(7, [1, 2, 3]), Pol(7, [ModInt(1, 7), ModInt(2, 7), ModInt(3, 7)])
-        )
-
-        self.assertEqual(Pol(7, [1, 2, 3]), Pol(7, [8, -5, 3]))
-        self.assertEqual(Pol(7, [1, 2, 3]), Pol(7, [1, 2, 3, 0, 0]))
-
-        self.assertEqual(Pol(7, [0]), Pol(7, []))
-
-        self.assertNotEqual(Pol(7, [1, 2, 3]), Pol(7, [1, 2, 4]))
-        self.assertNotEqual(Pol(7, [1, 2, 3]), Pol(7, [1, 2]))
-
-    def test_add(self):
-        # Example from slide 24
-        f = Pol(7, [5, 0, 4, 3])
-        g = Pol(7, [6, 3, 2])
-        s = Pol(7, [4, 3, 6, 3])
-        self.assertEqual(f + g, s)
-        self.assertEqual(g + f, s)
-
-    def test_sub(self):
-        # Example from slide 24
-        f = Pol(7, [5, 0, 4, 3])
-        g = Pol(7, [6, 3, 2])
-        d = Pol(7, [6, 4, 2, 3])
-        self.assertEqual(f - g, d)
-
-    def test_mul(self):
-        # Example from slide 24
-        f = Pol(7, [5, 0, 4, 3])
-        g = Pol(7, [6, 3, 2])
-        p = Pol(7, [2, 1, 6, 2, 3, 6])
-        self.assertEqual(f * g, p)
-        self.assertEqual(g * f, p)
-
-    def test_mod(self):
-        # Example from slide 26
-        h = Pol(41, [24, 19, 16, 24, 26, 25, 22])
-        m = Pol(41, [1, 0, 0, 0, 1])
-        r = Pol(41, [39, 35, 35, 24])
-        self.assertEqual(h % m, r)
-
-    def test_size(self):
-        # Example from slide 33
-        f = Pol(19, [1, 12, 0, 3, 0, 18])
-        self.assertEqual(f.size(), 7)
-
-        # Example from slide 34
-        g = Pol(31, [1, 30, 29, 0, 1, 2])
-        self.assertEqual(g.size(), 2)
-
-
-class ModPolGenTest(unittest.TestCase):
-    def test_equal(self):
-        # Example from slide 26
-        h = Pol(41, [24, 19, 16, 24, 26, 25, 22])
-        m = Pol(41, [1, 0, 0, 0, 1])
-        r = Pol(41, [39, 35, 35, 24])
-        self.assertEqual(ModPolGen(h, m), ModPolGen(r, m))
-
-        # wrong leading coefficient
-        r2 = Pol(41, [39, 35, 35, 25])
-        self.assertNotEqual(ModPolGen(h, m), ModPolGen(r2, m))
-
-    def test_add(self):
-        # Example from slide 26
-        m = Pol(41, [1, 0, 0, 0, 1])
-        f = ModPolGen(Pol(41, [32, 0, 17, 22]), m)
-        g = ModPolGen(Pol(41, [11, 7, 19, 1]), m)
-        # result computed manually
-        s = ModPolGen(Pol(41, [2, 7, 36, 23]), m)
-        self.assertEqual(f + g, s)
-        self.assertEqual(g + f, s)
-
-    def test_sub(self):
-        # Example from slide 26
-        m = Pol(41, [1, 0, 0, 0, 1])
-        f = ModPolGen(Pol(41, [32, 0, 17, 22]), m)
-        g = ModPolGen(Pol(41, [11, 7, 19, 1]), m)
-        # results computed manually
-        d1 = ModPolGen(Pol(41, [21, 34, 39, 21]), m)
-        d2 = ModPolGen(Pol(41, [-21, -34, -39, -21]), m)
-        self.assertEqual(f - g, d1)
-        self.assertEqual(g - f, d2)
-
-    def test_mul(self):
-        # Example from slide 26
-        m = Pol(41, [1, 0, 0, 0, 1])
-        f = ModPolGen(Pol(41, [32, 0, 17, 22]), m)
-        g = ModPolGen(Pol(41, [11, 7, 19, 1]), m)
-        r = ModPolGen(Pol(41, [39, 35, 35, 24]), m)
-        self.assertEqual(f * g, r)
-        self.assertEqual(g * f, r)
-
-    def test_size(self):
-        # Examples from slide 35
-        m = Pol(41, [1, 0, 0, 0, 1])
-        f = ModPolGen(Pol(41, [1, 1, -2, 2]), m)
-        g = ModPolGen(Pol(41, [-2, 0, 2, -1]), m)
-        self.assertEqual(f.size(), 2)
-        self.assertEqual(g.size(), 2)
-        self.assertEqual((f * g).size(), 8)
 
 
 class ModPolTest(unittest.TestCase):

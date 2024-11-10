@@ -1,24 +1,29 @@
 """
-Implement objects mentionned in V1b Mathematical Prerequisites.
+Implement objects mentionned in V1b Mathematical Prerequisites,
+as well Kyber methods for these objects (such as pseudo-random generation).
 
 This is an obvious implementation whose goal is to be readable.
 When possible, the same notations as in the slides are used.
+(Or as in the spec¹ when the dosctring or comment mentions the spec.)
+¹ https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.pdf
 
-Not coded in a defensive way; for example all operations on Mod could raise
-ValueError if the other value is not a Mod with the same modulus. I chose
+Not coded in a defensive way; for example all operations on ModInt could raise
+ValueError if the other value is not a ModInt with the same modulus. I chose
 not to clutter the code as this just a support for learning.
 
 Things are naturally arranged in layers, each building on the previous one:
     1. ModInt: modular integers (slide 23)
-    2. Pol: polynomial with ModInt coefficients (slide 24)
-    3. ModPolGen: modular polynomials (slides 25-27)
-    4. Vec: vectors of modular polynomials (slides 28-29)
+    2. ModPol: modular polynomials (slides 24-27)
+    3. Vec: vectors of modular polynomials (slides 28-29)
+    4. Mat: matrices of modular polynomials (slides 38-40)
 
 There are at least two natural ways of constructing the modular polynomials
-we'll need. The first, above, is the same as for modular integers; it's the
-most generic and doesn't rely on the special form of the modulus. The second,
-implemented in ModPol, fuses layers 2 and 3 above and takes advantage of the
-special form of the modulus to combine multiplication with modular reduction.
+we'll need. The first is the same as for modular integers : we first construst
+polynomials, with euclidean division (aka modulo) and then implement modular
+polynomials based on that. The second, implemented in ModPol, fuses those two
+steps above and takes advantage of the special form of the modulus to combine
+multiplication with modular reduction. An implementation based on the first,
+more generic approach can be found in previous commits.
 """
 
 import hashlib
@@ -48,8 +53,8 @@ class XOF:
         return out
 
 
-class Mod:
-    """Modular integer or polynomial (base class)."""
+class ModInt:
+    """Modular integer (slide 23)."""
 
     def __init__(self, r, q):
         """Build r mod q."""
@@ -58,27 +63,23 @@ class Mod:
 
     def __repr__(self):
         """Represent self."""
-        return f"{self.__class__.__name__}({self.r}, {self.q})"
+        return f"ModInt({self.r}, {self.q})"
 
     def __eq__(self, other):
-        """Compare to another Mod."""
+        """Compare to another ModInt."""
         return self.r == other.r and self.q == other.q
 
     def __add__(self, other):
-        """Add another Mod."""
+        """Add another ModInt."""
         return type(self)(self.r + other.r, self.q)
 
     def __sub__(self, other):
-        """Subtract another Mod."""
+        """Subtract another ModInt."""
         return type(self)(self.r - other.r, self.q)
 
     def __mul__(self, other):
-        """Multiply by another Mod."""
+        """Multiply by another ModInt."""
         return type(self)(self.r * other.r, self.q)
-
-
-class ModInt(Mod):
-    """Modular integer (slide 23)."""
 
     def __int__(self):
         """Get the representative in [0, q)."""
@@ -103,113 +104,6 @@ class ModInt(Mod):
         pos = secrets.randbelow(2 * eta + 1)  # [0, 2*eta]
         sym = pos - eta  # [-eta, eta]
         return cls(sym, q)
-
-
-class Pol:
-    """Polynomial with ModInt coefficients (slide 24)."""
-
-    def __init__(self, q, c):
-        """Build the polynomial c[0] + c[1] X + ... + c[n-1] X^n-1.
-
-        The coefficients can be passed either as a list of ModInt
-        or a list of integers."""
-        if len(c) != 0 and not isinstance(c[0], ModInt):
-            self.c = [ModInt(a, q) for a in c]
-        else:
-            self.c = c[:]
-        self.q = q
-
-        # Normalize: leading coefficient must not be 0.
-        # (Convention: the 0 polynomial is represented with self.c == [].)
-        while len(self.c) != 0 and self.c[-1] == ModInt(0, self.q):
-            self.c.pop()
-
-    def __repr__(self):
-        """Represent self."""
-        return f"Pol({self.q}, {self.c})"
-
-    def __eq__(self, other):
-        """Compare to another Pol."""
-        return self.q == other.q and self.c == other.c
-
-    def _c_padded(self, n):
-        """Iterate over coefficients, padded with 0 until n elements have been
-        returned."""
-        for a in self.c:
-            yield a
-        for _ in range(n - len(self.c)):
-            yield ModInt(0, self.q)
-
-    def __add__(self, other):
-        """Add another Pol."""
-        n = max(len(self.c), len(other.c))
-        c = [a + b for a, b in zip(self._c_padded(n), other._c_padded(n))]
-        return Pol(self.q, c)
-
-    def __sub__(self, other):
-        """Subtract another Pol."""
-        n = max(len(self.c), len(other.c))
-        c = [a - b for a, b in zip(self._c_padded(n), other._c_padded(n))]
-        return Pol(self.q, c)
-
-    def __mul__(self, other):
-        """Multiply by another Pol."""
-        c = [ModInt(0, self.q)] * (len(self.c) + len(other.c))
-        for i, a in enumerate(self.c):
-            for j, b in enumerate(other.c):
-                c[i + j] += a * b
-        return Pol(self.q, c)
-
-    def size(self):
-        """Size of self (slide 33)."""
-        return max((c.size() for c in self.c))
-
-    def deg(self):
-        """Degree of the polynomial."""
-        # Note the degree of the 0 polynomial is undefined,
-        # we chose to return -1 for simplicity's sake.
-        return len(self.c) - 1
-
-    def __mod__(self, other):
-        """Remainder in the Euclidean division of self by other.
-
-        This is the unique polynomial R such that:
-        (1) self - R is a multiple of other, and
-        (2) deg(R) < deg(other).
-
-        For simplicity's sake, require other to be unitary (leading
-        coefficient == 1), otherwise we'd need to implement division for
-        ModInts, which is not hard but useless for our purposes.
-        """
-        if len(other.c) == 0:
-            raise ZeroDivisionError
-        if other.c[-1] != ModInt(1, self.q):
-            raise NotImplementedError
-
-        # We start with R == self and we'll subtract multiples of self;
-        # that way (1) (from the dosctring) is a loop invariant.
-        # At each iteration we cancel the leading term of R, decreasing its
-        # degree; this is the loop variant, and (2) is the exit condition.
-        r = Pol(self.q, self.c)
-        while r.deg() >= other.deg():
-            # Set f = a X^n where a is R's leading coefficient,
-            # and n is such that f * other has the same degree as R.
-            a = r.c[-1]
-            n = r.deg() - other.deg()
-            f = Pol(self.q, [ModInt(0, self.q)] * n + [a])
-
-            r = r - f * other
-
-        return r
-
-
-# pylint: disable=too-few-public-methods
-class ModPolGen(Mod):
-    """Modular integer (slide 23)."""
-
-    def size(self):
-        """Size of self (slide 33)."""
-        return self.r.size()
 
 
 class ModPol:
@@ -400,7 +294,7 @@ class Mat:
     def from_seed(cls, q, n, k, rho):
         """Generate pseudo-random square matrix based on a seed."""
         # This is lines 3-7 in Algorithm 13 K-PKE.KeyGen or equivalently
-        # lines 4-8 in Algorithm 14 K-PKE.Encrypt in the standard,
+        # lines 4-8 in Algorithm 14 K-PKE.Encrypt in the spec,
         # except the result is supposed to be interpret it as in the NTT
         # domain, but we interpret it as normal polynomials instead
         # because we haven't implementet NTT yet.
