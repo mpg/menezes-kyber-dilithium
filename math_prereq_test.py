@@ -496,10 +496,8 @@ class MatTest(unittest.TestCase):
         q, n, k = 3, 2, 1
         zero = Mat(Vec(ModPol(q, n, [0, 0])))  # proba 1 / 3^(2*1)
         seen0 = False
-        print(zero)
         for _ in range(100):
             seen0 |= Mat.rand_uni(q, n, k) == zero
-            print(Mat.rand_uni(q, n, k))
         self.assertTrue(seen0)
 
     def test_transpose(self):
