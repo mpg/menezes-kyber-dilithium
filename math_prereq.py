@@ -93,6 +93,18 @@ class ModInt:
         """Rounding (slide 47)."""
         return int(self.q / 4 <= self.r <= 3 * self.q / 4)
 
+    def compress(self, d):
+        """Compress (slide 57)."""
+        # round() is not what we want as round(0.5) == 0
+        # int(0.5 + x) is what we want.
+        return int(0.5 + self.r * 2**d / self.q) % 2**d
+
+    @classmethod
+    def decompress(cls, q, y, d):
+        """Decompress (slide 57)."""
+        # See comment on compress().
+        return cls(int(0.5 + y * q / 2**d), q)
+
     @classmethod
     def rand_uni(cls, q):
         """Pick a ModInt uniformly at random."""
@@ -228,6 +240,15 @@ class ModPol:
         """Rounding (slide 47)."""
         return [a.round() for a in self.c]
 
+    def compress(self, d):
+        """Compress (slide 57)."""
+        return [c.compress(d) for c in self.c]
+
+    @classmethod
+    def decompress(cls, q, n, c, d):
+        """Decompress (slide 57)."""
+        return cls(q, n, [ModInt.decompress(q, y, d) for y in c])
+
 
 class Vec:
     """Element of R_q^k, ie vector of ModPols (slide 28)."""
@@ -275,6 +296,15 @@ class Vec:
     def size(self):
         """Size of self (slide 33)."""
         return max((f.size() for f in self.v))
+
+    def compress(self, d):
+        """Compress (slide 57)."""
+        return [x.compress(d) for x in self.v]
+
+    @classmethod
+    def decompress(cls, q, n, v, d):
+        """Decompress (slide 57)."""
+        return cls(*[ModPol.decompress(q, n, c, d) for c in v])
 
 
 class Mat:

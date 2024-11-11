@@ -71,6 +71,34 @@ class ModIntTest(unittest.TestCase):
         self.assertEqual(ModInt(-833, 3329).round(), 1)
         self.assertEqual(ModInt(833, 3329).round(), 1)
 
+    def test_compress_decompress(self):
+        # slide 58
+        q, d = 19, 2
+        data = [
+            (0, 0, 0),
+            (1, 0, 0),
+            (2, 0, 0),
+            (3, 1, 5),
+            (4, 1, 5),
+            (5, 1, 5),
+            (6, 1, 5),
+            (7, 1, 5),
+            (8, 2, 10),
+            (9, 2, 10),
+            (10, 2, 10),
+            (11, 2, 10),
+            (12, 3, 14),
+            (13, 3, 14),
+            (14, 3, 14),
+            (15, 3, 14),
+            (16, 3, 14),
+            (17, 0, 0),
+            (18, 0, 0),
+        ]
+        for x, y, x1 in data:
+            self.assertEqual(ModInt(x, q).compress(d), y)
+            self.assertEqual(ModInt.decompress(q, y, d), ModInt(x1, q))
+
     def test_rand_uni(self):
         # Don't actually test the distribution,
         # only the output range.
@@ -219,6 +247,21 @@ class ModPolTest(unittest.TestCase):
             self.assertEqual(gen, ModPol(q, n, exp_i))
             self.assertEqual(gen.to_bytes(), exp_b)
 
+    def test_compress_decompress(self):
+        # slides 59 and 60
+        q, n = 3329, 4
+        f = ModPol(q, n, [223, 1438, 3280, 798])
+
+        g10 = [69, 442, 1009, 245]
+        h10 = ModPol(q, n, [224, 1437, 3280, 796])
+        self.assertEqual(f.compress(10), g10)
+        self.assertEqual(ModPol.decompress(q, n, g10, 10), h10)
+
+        g4 = [1, 7, 0, 4]
+        h4 = ModPol(q, n, [208, 1456, 0, 832])
+        self.assertEqual(f.compress(4), g4)
+        self.assertEqual(ModPol.decompress(q, n, g4, 4), h4)
+
 
 class VecTest(unittest.TestCase):
     # Example from slide 29
@@ -312,6 +355,25 @@ class VecTest(unittest.TestCase):
         for _ in range(10000):
             seen0 |= Vec.rand_small_uni(q, n, k, eta) == zero
         self.assertTrue(seen0)
+
+    def test_compress_decompress(self):
+        # recycle examples from slide 59 and 60
+        q, n = 3329, 4
+
+        fc = [223, 1438, 3280, 798]
+        f = Vec(ModPol(q, n, fc), ModPol(q, n, list(reversed(fc))))
+
+        data = (
+            (10, [69, 442, 1009, 245], [224, 1437, 3280, 796]),
+            (4, [1, 7, 0, 4], [208, 1456, 0, 832]),
+        )
+
+        for d, g1, hc in data:
+            g = [g1, list(reversed(g1))]
+            self.assertEqual(f.compress(d), g)
+
+            h = Vec(ModPol(q, n, hc), ModPol(q, n, list(reversed(hc))))
+            self.assertEqual(Vec.decompress(q, n, g, d), h)
 
 
 class MatTest(unittest.TestCase):
