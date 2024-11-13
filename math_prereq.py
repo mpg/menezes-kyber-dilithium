@@ -117,6 +117,15 @@ class ModInt:
         sym = pos - eta  # [-eta, eta]
         return cls(sym, q)
 
+    @classmethod
+    def rand_small_cbd(cls, q, eta):
+        """Pick a small (size <= eta) ModInt with central binomial
+        distribution (slide 62)."""
+        a = [secrets.randbits(1) for _ in range(eta)]
+        b = [secrets.randbits(1) for _ in range(eta)]
+        c = sum(ai - bi for ai, bi in zip(a, b))
+        return cls(c, q)
+
 
 class ModPol:
     """Elements of R_q (slides 25-27), integrated implementation."""
@@ -146,6 +155,12 @@ class ModPol:
     def rand_small_uni(cls, q, n, eta):
         """Pick a small (size <= eta) element of R_q uniformly at random."""
         c = [ModInt.rand_small_uni(q, eta) for _ in range(n)]
+        return cls(q, n, c)
+
+    @classmethod
+    def rand_small_cbd(cls, q, n, eta):
+        """Pick a small (size <= eta) element of R_q with CDB (slide 62)."""
+        c = [ModInt.rand_small_cbd(q, eta) for _ in range(n)]
         return cls(q, n, c)
 
     @classmethod
@@ -267,6 +282,12 @@ class Vec:
     def rand_small_uni(cls, q, n, k, eta):
         """Pick a small (size <= eta) element of R_q^k uniformly at random."""
         v = [ModPol.rand_small_uni(q, n, eta) for _ in range(k)]
+        return cls(*v)
+
+    @classmethod
+    def rand_small_cbd(cls, q, n, k, eta):
+        """Pick a small (size <= eta) element of R_q^k with CBD (slide 62)."""
+        v = [ModPol.rand_small_cbd(q, n, eta) for _ in range(k)]
         return cls(*v)
 
     def __repr__(self):

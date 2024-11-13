@@ -142,6 +142,31 @@ class ModIntTest(unittest.TestCase):
         self.assertNotEqual(seenm2, 0)
         self.assertEqual(seen0 + seen1 + seen2 + seenm1 + seenm2, times)
 
+    def test_rand_small_cbd(self):
+        # Don't actually test the distribution,
+        # only the output range.
+        seen0, seen1, seen2, seenm1, seenm2 = 0, 0, 0, 0, 0
+        times = 100
+        q = 3329
+        for _ in range(times):
+            r = ModInt.rand_small_cbd(q, 2)
+            if r == ModInt(0, q):
+                seen0 += 1
+            if r == ModInt(1, q):
+                seen1 += 1
+            if r == ModInt(2, q):
+                seen2 += 1
+            if r == ModInt(-1, q):
+                seenm1 += 1
+            if r == ModInt(-2, q):
+                seenm2 += 1
+        self.assertNotEqual(seen0, 0)
+        self.assertNotEqual(seen1, 0)
+        self.assertNotEqual(seen2, 0)
+        self.assertNotEqual(seenm1, 0)
+        self.assertNotEqual(seenm2, 0)
+        self.assertEqual(seen0 + seen1 + seen2 + seenm1 + seenm2, times)
+
 
 class ModPolTest(unittest.TestCase):
     def test_equal(self):
@@ -232,6 +257,24 @@ class ModPolTest(unittest.TestCase):
         seen0 = False
         for _ in range(100):
             seen0 |= ModPol.rand_small_uni(q, n, eta) == zero
+        self.assertTrue(seen0)
+
+    def test_rand_small_cbd(self):
+        # Don't actually test the distribution,
+        # only the output range.
+        max_size = 0
+        q, n, eta = 3329, 8, 3
+        for _ in range(100):
+            f = ModPol.rand_small_cbd(q, n, eta)
+            max_size = max(max_size, f.size())
+        self.assertEqual(max_size, eta)
+
+        # Ensure we get objects of the right shape
+        q, n, eta = 3329, 2, 1
+        zero = ModPol(q, n, [0, 0])  # proba 1 / 2^2
+        seen0 = False
+        for _ in range(50):
+            seen0 |= ModPol.rand_small_cbd(q, n, eta) == zero
         self.assertTrue(seen0)
 
     def test_from_seed_and_to_bytes(self):
@@ -354,6 +397,25 @@ class VecTest(unittest.TestCase):
         seen0 = False
         for _ in range(10000):
             seen0 |= Vec.rand_small_uni(q, n, k, eta) == zero
+        self.assertTrue(seen0)
+
+    def test_rand_small_cbd(self):
+        # Don't actually test the distribution,
+        # only the output range.
+        max_size = 0
+        q, n, k, eta = 3329, 8, 2, 3
+        for _ in range(50):
+            v = Vec.rand_small_cbd(q, n, k, eta)
+            max_size = max(max_size, v.size())
+        self.assertEqual(max_size, eta)
+
+        # Ensure we get objects of the right shape
+        q, n, k, eta = 3329, 3, 2, 1
+        zeropol = ModPol(q, n, [0, 0, 0])  # 1 / 2^3
+        zero = Vec(zeropol, zeropol)  # proba 1 / 2^(3*2) = 1 / 64
+        seen0 = False
+        for _ in range(1000):
+            seen0 |= Vec.rand_small_cbd(q, n, k, eta) == zero
         self.assertTrue(seen0)
 
     def test_compress_decompress(self):
