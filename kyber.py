@@ -13,6 +13,8 @@ n = 256
 k = 3
 eta1 = 2
 eta2 = 2
+du = 10
+dv = 4
 
 
 def genkey():
@@ -29,28 +31,36 @@ def genkey():
 
 
 def encrypt(pub, msg):
-    """Encrypt msg (list of 0, 1) with simplified Kyber-PKE (slide 49)."""
+    """Encrypt msg (list of 0, 1) with "full" Kyber-PKE (slide 66)."""
     if len(msg) != n or any(b not in (0, 1) for b in msg):
         raise ValueError
 
     rho, t = pub
     A = Mat.from_seed(q, n, k, rho)
 
-    q2 = q // 2 + 1
-    q2m = ModPol(q, n, [b * q2 for b in msg])
+    r = Vec.rand_small_cbd(q, n, k, eta1)
+    e1 = Vec.rand_small_cbd(q, n, k, eta2)
+    e2 = ModPol.rand_small_cbd(q, n, eta2)
 
-    r = Vec.rand_small_uni(q, n, k, eta1)
-    e1 = Vec.rand_small_uni(q, n, k, eta2)
-    e2 = ModPol.rand_small_uni(q, n, eta2)
+    # q2m := ⌈q/2⌋ * m
+    q2 = q // 2 + 1  # we know q is odd
+    q2m = ModPol(q, n, [b * q2 for b in msg])
 
     u = A.transpose() @ r + e1
     v = t * r + e2 + q2m
 
-    return (u, v)
+    c1 = u.compress(du)
+    c2 = v.compress(dv)
+
+    return (c1, c2)
 
 
 def decrypt(prv, ct):
-    """Decrypt ciphertext with simplified Kyber-PKE (slide 49)."""
+    """Decrypt ciphertext with "full" Kyber-PKE (slide 66)."""
     s = prv
-    u, v = ct
-    return (v - s * u).round()
+    c1, c2 = ct
+
+    uu = Vec.decompress(q, n, c1, du)
+    vv = ModPol.decompress(q, n, c2, dv)
+
+    return (vv - s * uu).round()
