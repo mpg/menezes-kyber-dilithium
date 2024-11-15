@@ -2,6 +2,8 @@
 Implementation of a simplified version of Kyber.
 """
 
+import secrets
+
 from math_prereq import Vec, Mat, ModPol
 
 # Kyber (all sizes)
@@ -14,13 +16,16 @@ eta2 = 2
 
 
 def genkey():
-    """Generate a keypair for simplified Kyber-PKE (slide 48)."""
-    A = Mat.rand_uni(q, n, k)
-    s = Vec.rand_small_uni(q, n, k, eta1)
-    e = Vec.rand_small_uni(q, n, k, eta2)
+    """Generate a keypair for "full" Kyber-PKE (slide 65)."""
+    rho = secrets.token_bytes(32)
+    A = Mat.from_seed(q, n, k, rho)
+
+    s = Vec.rand_small_cbd(q, n, k, eta1)
+    e = Vec.rand_small_cbd(q, n, k, eta2)
+
     t = A @ s + e
 
-    return ((A, t), s)
+    return ((rho, t), s)
 
 
 def encrypt(pub, msg):
@@ -28,7 +33,8 @@ def encrypt(pub, msg):
     if len(msg) != n or any(b not in (0, 1) for b in msg):
         raise ValueError
 
-    A, t = pub
+    rho, t = pub
+    A = Mat.from_seed(q, n, k, rho)
 
     q2 = q // 2 + 1
     q2m = ModPol(q, n, [b * q2 for b in msg])
