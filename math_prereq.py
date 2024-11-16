@@ -89,22 +89,6 @@ class ModInt:
         """Size of self (slide 33)."""
         return min(self.r, self.q - self.r)
 
-    def round(self):
-        """Rounding (slide 47)."""
-        return int(self.q / 4 <= self.r <= 3 * self.q / 4)
-
-    def compress(self, d):
-        """Compress (slide 57)."""
-        # round() is not what we want as round(0.5) == 0
-        # int(0.5 + x) is what we want.
-        return int(0.5 + self.r * 2**d / self.q) % 2**d
-
-    @classmethod
-    def decompress(cls, q, y, d):
-        """Decompress (slide 57)."""
-        # See comment on compress().
-        return cls(int(0.5 + y * q / 2**d), q)
-
     @classmethod
     def rand_uni(cls, q):
         """Pick a ModInt uniformly at random."""
@@ -125,6 +109,22 @@ class ModInt:
         b = [secrets.randbits(1) for _ in range(eta)]
         c = sum(ai - bi for ai, bi in zip(a, b))
         return cls(c, q)
+
+    def round(self):
+        """Rounding (slide 47)."""
+        return int(self.q / 4 <= self.r <= 3 * self.q / 4)
+
+    def compress(self, d):
+        """Compress (slide 57)."""
+        # round() is not what we want as round(0.5) == 0
+        # int(0.5 + x) is what we want.
+        return int(0.5 + self.r * 2**d / self.q) % 2**d
+
+    @classmethod
+    def decompress(cls, q, y, d):
+        """Decompress (slide 57)."""
+        # See comment on compress().
+        return cls(int(0.5 + y * q / 2**d), q)
 
 
 class ModPol:
@@ -152,6 +152,51 @@ class ModPol:
         """Pick a small (size <= eta) element of R_q uniformly at random."""
         c = [cls.coef_cls.rand_small_uni(q, eta) for _ in range(n)]
         return cls(q, n, c)
+
+    def __repr__(self):
+        """Represent self."""
+        return f"type(self)({self.q}, {self.n}, {self.c})"
+
+    def __eq__(self, other):
+        """Compare to another ModPol."""
+        # Comparison of q and n are implied by comparing coefficients
+        return self.c == other.c
+
+    def __add__(self, other):
+        """Add another ModPol."""
+        c = [a + b for a, b in zip(self.c, other.c)]
+        # No need to reduce mod X^n + 1, the degree didn't increase
+        return type(self)(self.q, self.n, c)
+
+    def __sub__(self, other):
+        """Subtract another ModPol."""
+        c = [a - b for a, b in zip(self.c, other.c)]
+        # No need to reduce mod X^n + 1, the degree didn't increase
+        return type(self)(self.q, self.n, c)
+
+    def __mul__(self, other):
+        """Multiply by another ModPol."""
+        c = [type(self).coef_cls(0, self.q)] * self.n
+        for i, a in enumerate(self.c):
+            for j, b in enumerate(other.c):
+                p = a * b
+                k = i + j
+                # Immediately reduce mod X^n + 1: if we would add p*X^k,
+                # then instead subtract p*X^{k-n} since mod X^n + 1 we have:
+                #   X^n + 1 == 0
+                #   X^n == -1
+                #   X^n * X^{k-n} == -1 * X^{k-n}
+                #   X^k == - X^{k-n}
+                # (that's the 4th bullet on slide 26).
+                if k >= self.n:
+                    c[k - self.n] -= p
+                else:
+                    c[k] += p
+        return type(self)(self.q, self.n, c)
+
+    def size(self):
+        """Size of self (slide 33)."""
+        return max((c.size() for c in self.c))
 
     @classmethod
     def rand_small_cbd(cls, q, n, eta):
@@ -202,51 +247,6 @@ class ModPol:
 
         return out
 
-    def __repr__(self):
-        """Represent self."""
-        return f"type(self)({self.q}, {self.n}, {self.c})"
-
-    def __eq__(self, other):
-        """Compare to another ModPol."""
-        # Comparison of q and n are implied by comparing coefficients
-        return self.c == other.c
-
-    def __add__(self, other):
-        """Add another ModPol."""
-        c = [a + b for a, b in zip(self.c, other.c)]
-        # No need to reduce mod X^n + 1, the degree didn't increase
-        return type(self)(self.q, self.n, c)
-
-    def __sub__(self, other):
-        """Subtract another ModPol."""
-        c = [a - b for a, b in zip(self.c, other.c)]
-        # No need to reduce mod X^n + 1, the degree didn't increase
-        return type(self)(self.q, self.n, c)
-
-    def __mul__(self, other):
-        """Multiply by another ModPol."""
-        c = [type(self).coef_cls(0, self.q)] * self.n
-        for i, a in enumerate(self.c):
-            for j, b in enumerate(other.c):
-                p = a * b
-                k = i + j
-                # Immediately reduce mod X^n + 1: if we would add p*X^k,
-                # then instead subtract p*X^{k-n} since mod X^n + 1 we have:
-                #   X^n + 1 == 0
-                #   X^n == -1
-                #   X^n * X^{k-n} == -1 * X^{k-n}
-                #   X^k == - X^{k-n}
-                # (that's the 4th bullet on slide 26).
-                if k >= self.n:
-                    c[k - self.n] -= p
-                else:
-                    c[k] += p
-        return type(self)(self.q, self.n, c)
-
-    def size(self):
-        """Size of self (slide 33)."""
-        return max((c.size() for c in self.c))
-
     def round(self):
         """Rounding (slide 47)."""
         return [a.round() for a in self.c]
@@ -282,12 +282,6 @@ class Vec:
         v = [cls.item_cls.rand_small_uni(q, n, eta) for _ in range(k)]
         return cls(v)
 
-    @classmethod
-    def rand_small_cbd(cls, q, n, k, eta):
-        """Pick a small (size <= eta) element of R_q^k with CBD (slide 62)."""
-        v = [cls.item_cls.rand_small_cbd(q, n, eta) for _ in range(k)]
-        return cls(v)
-
     def __repr__(self):
         """Represent self."""
         return f"{type(self).__name__}({self.v})"
@@ -316,6 +310,12 @@ class Vec:
         """Size of self (slide 33)."""
         return max((f.size() for f in self.v))
 
+    @classmethod
+    def rand_small_cbd(cls, q, n, k, eta):
+        """Pick a small (size <= eta) element of R_q^k with CBD (slide 62)."""
+        v = [cls.item_cls.rand_small_cbd(q, n, eta) for _ in range(k)]
+        return cls(v)
+
     def compress(self, d):
         """Compress (slide 57)."""
         return [x.compress(d) for x in self.v]
@@ -341,6 +341,25 @@ class Mat:
         """Pick an element of R_q^k*k uniformly at random."""
         lines = [cls.line_cls.rand_uni(q, n, k) for _ in range(k)]
         return cls(lines)
+
+    def __repr__(self):
+        """Represent self."""
+        return f"{type(self).__name__}({self.lines})"
+
+    def __eq__(self, other):
+        """Compare to another Mat."""
+        return self.lines == other.lines
+
+    def __matmul__(self, vec):
+        """Multiply by a Vec."""
+        v = [l * vec for l in self.lines]
+        return self.line_cls(v)
+
+    def transpose(self):
+        """Return self's transpose."""
+        m = [vec.v for vec in self.lines]
+        t = [[m[j][i] for j in range(len(m))] for i in range(len(m[0]))]
+        return type(self)([self.line_cls(l) for l in t])
 
     @classmethod
     def from_seed(cls, q, n, k, rho):
@@ -369,22 +388,3 @@ class Mat:
                 out += x.to_bytes()
 
         return out
-
-    def __repr__(self):
-        """Represent self."""
-        return f"{type(self).__name__}({self.lines})"
-
-    def __eq__(self, other):
-        """Compare to another Mat."""
-        return self.lines == other.lines
-
-    def __matmul__(self, vec):
-        """Multiply by a Vec."""
-        v = [l * vec for l in self.lines]
-        return self.line_cls(v)
-
-    def transpose(self):
-        """Return self's transpose."""
-        m = [vec.v for vec in self.lines]
-        t = [[m[j][i] for j in range(len(m))] for i in range(len(m[0]))]
-        return type(self)([self.line_cls(l) for l in t])
