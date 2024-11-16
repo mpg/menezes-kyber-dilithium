@@ -131,17 +131,11 @@ class ModPol:
     """Elements of R_q (slides 25-27), integrated implementation."""
 
     def __init__(self, q, n, c):
-        """Build the polynomial c[0] + c[1] X + ... + c[n-1] X^n-1 mod X^n + 1.
-
-        The coefficients can be passed either as a list of n ModInt
-        or a list of n integers."""
+        """Build c[0] + c[1] X + ... + c[n-1] X^n-1 mod X^n + 1."""
         if len(c) != n or n == 0:
             raise ValueError
 
-        if not isinstance(c[0], ModInt):
-            self.c = [ModInt(a, q) for a in c]
-        else:
-            self.c = c[:]
+        self.c = tuple(c)
         self.q = q
         self.n = n
 
@@ -185,9 +179,9 @@ class ModPol:
             d1 = C[0] + 256 * (C[1] % 16)
             d2 = C[1] // 16 + 16 * C[2]
             if d1 < q:
-                a.append(d1)
+                a.append(ModInt(d1, q))
             if d2 < q and len(a) < n:
-                a.append(d2)
+                a.append(ModInt(d2, q))
 
         return cls(q, n, a)
 

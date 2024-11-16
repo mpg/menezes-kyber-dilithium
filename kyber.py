@@ -4,7 +4,7 @@ Implementation of a simplified version of Kyber.
 
 import secrets
 
-from math_prereq import Vec, Mat, ModPol
+from math_prereq import Vec, Mat, ModPol, ModInt
 
 # Kyber (all sizes)
 q = 3329
@@ -44,7 +44,7 @@ def encrypt(pub, msg):
 
     # q2m := ⌈q/2⌋ * m
     q2 = q // 2 + 1  # we know q is odd
-    q2m = ModPol(q, n, [b * q2 for b in msg])
+    q2m = ModPol(q, n, [ModInt(b * q2, q) for b in msg])
 
     u = A.transpose() @ r + e1
     v = t * r + e2 + q2m

@@ -9,6 +9,7 @@ from math_prereq import (
 
 
 def get(filename, varname):
+    """Read a value from a ML-KEM-*.txt file."""
     prefix = varname + " = "
     with open(filename, encoding="utf8") as f:
         for line in f:
@@ -27,6 +28,11 @@ def get(filename, varname):
 
     # if not, it must be bytes
     return bytes.fromhex(val)
+
+
+def modpol(q, n, c):
+    """Helper building a ModPol from a list of int (not ModInt)."""
+    return ModPol(q, n, [ModInt(a, q) for a in c])
 
 
 class ModIntTest(unittest.TestCase):
@@ -170,56 +176,56 @@ class ModIntTest(unittest.TestCase):
 
 class ModPolTest(unittest.TestCase):
     def test_equal(self):
-        r0 = ModPol(41, 4, [39, 35, 35, 24])
-        r1 = ModPol(41, 4, [-2, 35, -6, 24])
+        r0 = modpol(41, 4, [39, 35, 35, 24])
+        r1 = modpol(41, 4, [-2, 35, -6, 24])
         self.assertEqual(r0, r1)
 
         # wrong leading coefficient
-        r2 = ModPol(41, 4, [39, 35, 35, 25])
+        r2 = modpol(41, 4, [39, 35, 35, 25])
         self.assertNotEqual(r0, r2)
 
         # wrong integer modulus
-        r3 = ModPol(43, 4, [39, 35, 35, 25])
+        r3 = modpol(43, 4, [39, 35, 35, 25])
         self.assertNotEqual(r0, r3)
 
     def test_add(self):
         # Example from slide 26
-        f = ModPol(41, 4, [32, 0, 17, 22])
-        g = ModPol(41, 4, [11, 7, 19, 1])
+        f = modpol(41, 4, [32, 0, 17, 22])
+        g = modpol(41, 4, [11, 7, 19, 1])
         # result computed manually
-        s = ModPol(41, 4, [2, 7, 36, 23])
+        s = modpol(41, 4, [2, 7, 36, 23])
         self.assertEqual(f + g, s)
         self.assertEqual(g + f, s)
 
     def test_sub(self):
         # Example from slide 26
-        f = ModPol(41, 4, [32, 0, 17, 22])
-        g = ModPol(41, 4, [11, 7, 19, 1])
+        f = modpol(41, 4, [32, 0, 17, 22])
+        g = modpol(41, 4, [11, 7, 19, 1])
         # results computed manually
-        d1 = ModPol(41, 4, [21, 34, 39, 21])
-        d2 = ModPol(41, 4, [-21, -34, -39, -21])
+        d1 = modpol(41, 4, [21, 34, 39, 21])
+        d2 = modpol(41, 4, [-21, -34, -39, -21])
         self.assertEqual(f - g, d1)
         self.assertEqual(g - f, d2)
 
     def test_mul(self):
         # Example from slide 26
-        f = ModPol(41, 4, [32, 0, 17, 22])
-        g = ModPol(41, 4, [11, 7, 19, 1])
-        r = ModPol(41, 4, [39, 35, 35, 24])
+        f = modpol(41, 4, [32, 0, 17, 22])
+        g = modpol(41, 4, [11, 7, 19, 1])
+        r = modpol(41, 4, [39, 35, 35, 24])
         self.assertEqual(f * g, r)
         self.assertEqual(g * f, r)
 
     def test_size(self):
         # Examples from slide 35
-        f = ModPol(41, 4, [1, 1, -2, 2])
-        g = ModPol(41, 4, [-2, 0, 2, -1])
+        f = modpol(41, 4, [1, 1, -2, 2])
+        g = modpol(41, 4, [-2, 0, 2, -1])
         self.assertEqual(f.size(), 2)
         self.assertEqual(g.size(), 2)
         self.assertEqual((f * g).size(), 8)
 
     def test_round(self):
         # Example from slide 47
-        f = ModPol(3329, 4, [3000, 1500, 2010, 37])
+        f = modpol(3329, 4, [3000, 1500, 2010, 37])
         g = [0, 1, 1, 0]
         self.assertEqual(f.round(), g)
 
@@ -235,7 +241,7 @@ class ModPolTest(unittest.TestCase):
 
         # Ensure we get objects of the right shape
         q, n = 3, 2
-        zero = ModPol(q, n, [0, 0])  # proba 1 / 3^2
+        zero = modpol(q, n, [0, 0])  # proba 1 / 3^2
         seen0 = False
         for _ in range(100):
             seen0 |= ModPol.rand_uni(q, n) == zero
@@ -253,7 +259,7 @@ class ModPolTest(unittest.TestCase):
 
         # Ensure we get objects of the right shape
         q, n, eta = 3329, 2, 1
-        zero = ModPol(q, n, [0, 0])  # proba 1 / 3^2
+        zero = modpol(q, n, [0, 0])  # proba 1 / 3^2
         seen0 = False
         for _ in range(100):
             seen0 |= ModPol.rand_small_uni(q, n, eta) == zero
@@ -271,7 +277,7 @@ class ModPolTest(unittest.TestCase):
 
         # Ensure we get objects of the right shape
         q, n, eta = 3329, 2, 1
-        zero = ModPol(q, n, [0, 0])  # proba 1 / 2^2
+        zero = modpol(q, n, [0, 0])  # proba 1 / 2^2
         seen0 = False
         for _ in range(50):
             seen0 |= ModPol.rand_small_cbd(q, n, eta) == zero
@@ -287,21 +293,21 @@ class ModPolTest(unittest.TestCase):
             exp_i, exp_b = get(filename, "A[0, 0]")
             B = rho + bytes.fromhex("0000")
             gen = ModPol.from_seed(q, n, B)
-            self.assertEqual(gen, ModPol(q, n, exp_i))
+            self.assertEqual(gen, modpol(q, n, exp_i))
             self.assertEqual(gen.to_bytes(), exp_b)
 
     def test_compress_decompress(self):
         # slides 59 and 60
         q, n = 3329, 4
-        f = ModPol(q, n, [223, 1438, 3280, 798])
+        f = modpol(q, n, [223, 1438, 3280, 798])
 
         g10 = [69, 442, 1009, 245]
-        h10 = ModPol(q, n, [224, 1437, 3280, 796])
+        h10 = modpol(q, n, [224, 1437, 3280, 796])
         self.assertEqual(f.compress(10), g10)
         self.assertEqual(ModPol.decompress(q, n, g10, 10), h10)
 
         g4 = [1, 7, 0, 4]
-        h4 = ModPol(q, n, [208, 1456, 0, 832])
+        h4 = modpol(q, n, [208, 1456, 0, 832])
         self.assertEqual(f.compress(4), g4)
         self.assertEqual(ModPol.decompress(q, n, g4, 4), h4)
 
@@ -309,26 +315,26 @@ class ModPolTest(unittest.TestCase):
 class VecTest(unittest.TestCase):
     # Example from slide 29
     a = Vec(
-        ModPol(137, 4, [93, 51, 34, 54]),
-        ModPol(137, 4, [27, 87, 81, 6]),
-        ModPol(137, 4, [112, 15, 46, 122]),
+        modpol(137, 4, [93, 51, 34, 54]),
+        modpol(137, 4, [27, 87, 81, 6]),
+        modpol(137, 4, [112, 15, 46, 122]),
     )
     b = Vec(
-        ModPol(137, 4, [40, 78, 1, 119]),
-        ModPol(137, 4, [11, 31, 57, 90]),
-        ModPol(137, 4, [108, 72, 47, 14]),
+        modpol(137, 4, [40, 78, 1, 119]),
+        modpol(137, 4, [11, 31, 57, 90]),
+        modpol(137, 4, [108, 72, 47, 14]),
     )
     s = Vec(
-        ModPol(137, 4, [133, 129, 35, 36]),
-        ModPol(137, 4, [38, 118, 1, 96]),
-        ModPol(137, 4, [83, 87, 93, 136]),
+        modpol(137, 4, [133, 129, 35, 36]),
+        modpol(137, 4, [38, 118, 1, 96]),
+        modpol(137, 4, [83, 87, 93, 136]),
     )
     d = Vec(
-        ModPol(137, 4, [53, 110, 33, 72]),
-        ModPol(137, 4, [16, 56, 24, 53]),
-        ModPol(137, 4, [4, 80, 136, 108]),
+        modpol(137, 4, [53, 110, 33, 72]),
+        modpol(137, 4, [16, 56, 24, 53]),
+        modpol(137, 4, [4, 80, 136, 108]),
     )
-    p = ModPol(137, 4, [93, 59, 44, 132])
+    p = modpol(137, 4, [93, 59, 44, 132])
 
     def test_equal(self):
         self.assertEqual(self.a, self.a)
@@ -350,8 +356,8 @@ class VecTest(unittest.TestCase):
 
     def test_size(self):
         # ModPol examples from slide 35 - let's create vectors out of them.
-        f = ModPol(41, 4, [1, 1, -2, 2])
-        g = ModPol(41, 4, [-2, 0, 2, -1])
+        f = modpol(41, 4, [1, 1, -2, 2])
+        g = modpol(41, 4, [-2, 0, 2, -1])
 
         self.assertEqual(Vec(f, g).size(), 2)
         self.assertEqual(Vec(g, f).size(), 2)
@@ -374,7 +380,7 @@ class VecTest(unittest.TestCase):
 
         # Ensure we get objects of the right shape
         q, n, k = 3, 2, 1
-        zero = Vec(ModPol(q, n, [0, 0]))  # proba 1 / 3^(2*1)
+        zero = Vec(modpol(q, n, [0, 0]))  # proba 1 / 3^(2*1)
         seen0 = False
         for _ in range(100):
             seen0 |= Vec.rand_uni(q, n, k) == zero
@@ -392,7 +398,7 @@ class VecTest(unittest.TestCase):
 
         # Ensure we get objects of the right shape
         q, n, k, eta = 3329, 3, 2, 1
-        zeropol = ModPol(q, n, [0, 0, 0])  # 1 / 3^3
+        zeropol = modpol(q, n, [0, 0, 0])  # 1 / 3^3
         zero = Vec(zeropol, zeropol)  # proba 1 / 3^(3*2) = 1 / 729
         seen0 = False
         for _ in range(10000):
@@ -411,7 +417,7 @@ class VecTest(unittest.TestCase):
 
         # Ensure we get objects of the right shape
         q, n, k, eta = 3329, 3, 2, 1
-        zeropol = ModPol(q, n, [0, 0, 0])  # 1 / 2^3
+        zeropol = modpol(q, n, [0, 0, 0])  # 1 / 2^3
         zero = Vec(zeropol, zeropol)  # proba 1 / 2^(3*2) = 1 / 64
         seen0 = False
         for _ in range(1000):
@@ -423,7 +429,7 @@ class VecTest(unittest.TestCase):
         q, n = 3329, 4
 
         fc = [223, 1438, 3280, 798]
-        f = Vec(ModPol(q, n, fc), ModPol(q, n, list(reversed(fc))))
+        f = Vec(modpol(q, n, fc), modpol(q, n, list(reversed(fc))))
 
         data = (
             (10, [69, 442, 1009, 245], [224, 1437, 3280, 796]),
@@ -434,7 +440,7 @@ class VecTest(unittest.TestCase):
             g = [g1, list(reversed(g1))]
             self.assertEqual(f.compress(d), g)
 
-            h = Vec(ModPol(q, n, hc), ModPol(q, n, list(reversed(hc))))
+            h = Vec(modpol(q, n, hc), modpol(q, n, list(reversed(hc))))
             self.assertEqual(Vec.decompress(q, n, g, d), h)
 
 
@@ -442,7 +448,7 @@ class MatTest(unittest.TestCase):
     def test_mlwe(self):
         # Example from slide 39
         def P(*c):
-            return ModPol(541, 4, c)
+            return modpol(541, 4, c)
 
         a = Mat(
             Vec(P(442, 502, 513, 15), P(368, 166, 37, 135)),
@@ -472,19 +478,19 @@ class MatTest(unittest.TestCase):
 
         # Ensure we get objects of the right shape
         q, n, k = 3, 2, 1
-        zero = Mat(Vec(ModPol(q, n, [0, 0])))  # proba 1 / 3^(2*1)
+        zero = Mat(Vec(modpol(q, n, [0, 0])))  # proba 1 / 3^(2*1)
         seen0 = False
         for _ in range(100):
             seen0 |= Mat.rand_uni(q, n, k) == zero
         self.assertTrue(seen0)
 
     def test_transpose(self):
-        a = ModPol(6, 1, [0])
-        b = ModPol(6, 1, [1])
-        c = ModPol(6, 1, [2])
-        d = ModPol(6, 1, [3])
-        e = ModPol(6, 1, [4])
-        f = ModPol(6, 1, [5])
+        a = modpol(6, 1, [0])
+        b = modpol(6, 1, [1])
+        c = modpol(6, 1, [2])
+        d = modpol(6, 1, [3])
+        e = modpol(6, 1, [4])
+        f = modpol(6, 1, [5])
 
         m1 = Mat(Vec(a, b), Vec(c, d))
         m2 = Mat(Vec(a, c), Vec(b, d))
