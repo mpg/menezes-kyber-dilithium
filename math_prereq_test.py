@@ -5,6 +5,7 @@ from math_prereq import (
     ModPol,
     Vec,
     Mat,
+    KMat,
 )
 
 
@@ -512,6 +513,8 @@ class MatTest(unittest.TestCase):
         self.assertEqual(m1.transpose(), m2)
         self.assertEqual(m2.transpose(), m1)
 
+
+class KMatTest(unittest.TestCase):
     def test_from_seed_and_to_bytes(self):
         q, n = 3329, 256
 
@@ -520,5 +523,5 @@ class MatTest(unittest.TestCase):
 
             rho = get(filename, "ρ")
             exp = get(filename, "A")
-            got = Mat.from_seed(q, n, k, rho).to_bytes()
+            got = KMat.from_seed(q, n, k, rho).to_bytes()
             self.assertEqual(got, exp)

@@ -361,6 +361,10 @@ class Mat:
         t = [[m[j][i] for j in range(len(m))] for i in range(len(m[0]))]
         return type(self)([self.line_cls(l) for l in t])
 
+
+class KMat(Mat):
+    """Matrix of elements of R_q with Kyber extras."""
+
     @classmethod
     def from_seed(cls, q, n, k, rho):
         """Generate pseudo-random square matrix based on a seed."""

@@ -4,7 +4,7 @@ Implementation of a simplified version of Kyber.
 
 import secrets
 
-from math_prereq import Vec, Mat, ModPol, ModInt
+from math_prereq import Vec, KMat, ModPol, ModInt
 
 # Kyber (all sizes)
 q = 3329
@@ -20,7 +20,7 @@ dv = 4
 def genkey():
     """Generate a keypair for "full" Kyber-PKE (slide 65)."""
     rho = secrets.token_bytes(32)
-    A = Mat.from_seed(q, n, k, rho)
+    A = KMat.from_seed(q, n, k, rho)
 
     s = Vec.rand_small_cbd(q, n, k, eta1)
     e = Vec.rand_small_cbd(q, n, k, eta2)
@@ -36,7 +36,7 @@ def encrypt(pub, msg):
         raise ValueError
 
     rho, t = pub
-    A = Mat.from_seed(q, n, k, rho)
+    A = KMat.from_seed(q, n, k, rho)
 
     r = Vec.rand_small_cbd(q, n, k, eta1)
     e1 = Vec.rand_small_cbd(q, n, k, eta2)
