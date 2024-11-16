@@ -35,6 +35,16 @@ def modpol(q, n, c):
     return ModPol(q, n, [ModInt(a, q) for a in c])
 
 
+def vec(*v):
+    """Shortcut to avoid ([...])."""
+    return Vec(v)
+
+
+def mat(*v):
+    """Shortcut to avoid ([...])."""
+    return Mat(v)
+
+
 class ModIntTest(unittest.TestCase):
     def test_equal(self):
         self.assertEqual(ModInt(5, 17), ModInt(5, 17))
@@ -314,22 +324,22 @@ class ModPolTest(unittest.TestCase):
 
 class VecTest(unittest.TestCase):
     # Example from slide 29
-    a = Vec(
+    a = vec(
         modpol(137, 4, [93, 51, 34, 54]),
         modpol(137, 4, [27, 87, 81, 6]),
         modpol(137, 4, [112, 15, 46, 122]),
     )
-    b = Vec(
+    b = vec(
         modpol(137, 4, [40, 78, 1, 119]),
         modpol(137, 4, [11, 31, 57, 90]),
         modpol(137, 4, [108, 72, 47, 14]),
     )
-    s = Vec(
+    s = vec(
         modpol(137, 4, [133, 129, 35, 36]),
         modpol(137, 4, [38, 118, 1, 96]),
         modpol(137, 4, [83, 87, 93, 136]),
     )
-    d = Vec(
+    d = vec(
         modpol(137, 4, [53, 110, 33, 72]),
         modpol(137, 4, [16, 56, 24, 53]),
         modpol(137, 4, [4, 80, 136, 108]),
@@ -359,14 +369,14 @@ class VecTest(unittest.TestCase):
         f = modpol(41, 4, [1, 1, -2, 2])
         g = modpol(41, 4, [-2, 0, 2, -1])
 
-        self.assertEqual(Vec(f, g).size(), 2)
-        self.assertEqual(Vec(g, f).size(), 2)
-        self.assertEqual(Vec(f, g, f).size(), 2)
-        self.assertEqual(Vec(g, f, g, f).size(), 2)
+        self.assertEqual(vec(f, g).size(), 2)
+        self.assertEqual(vec(g, f).size(), 2)
+        self.assertEqual(vec(f, g, f).size(), 2)
+        self.assertEqual(vec(g, f, g, f).size(), 2)
 
-        self.assertEqual(Vec(f, g, f * g).size(), 8)
-        self.assertEqual(Vec(f, f * g, g).size(), 8)
-        self.assertEqual(Vec(f * g, f, g).size(), 8)
+        self.assertEqual(vec(f, g, f * g).size(), 8)
+        self.assertEqual(vec(f, f * g, g).size(), 8)
+        self.assertEqual(vec(f * g, f, g).size(), 8)
 
     def test_rand_uni(self):
         # Don't actually test the distribution,
@@ -380,7 +390,7 @@ class VecTest(unittest.TestCase):
 
         # Ensure we get objects of the right shape
         q, n, k = 3, 2, 1
-        zero = Vec(modpol(q, n, [0, 0]))  # proba 1 / 3^(2*1)
+        zero = vec(modpol(q, n, [0, 0]))  # proba 1 / 3^(2*1)
         seen0 = False
         for _ in range(100):
             seen0 |= Vec.rand_uni(q, n, k) == zero
@@ -399,7 +409,7 @@ class VecTest(unittest.TestCase):
         # Ensure we get objects of the right shape
         q, n, k, eta = 3329, 3, 2, 1
         zeropol = modpol(q, n, [0, 0, 0])  # 1 / 3^3
-        zero = Vec(zeropol, zeropol)  # proba 1 / 3^(3*2) = 1 / 729
+        zero = vec(zeropol, zeropol)  # proba 1 / 3^(3*2) = 1 / 729
         seen0 = False
         for _ in range(10000):
             seen0 |= Vec.rand_small_uni(q, n, k, eta) == zero
@@ -418,7 +428,7 @@ class VecTest(unittest.TestCase):
         # Ensure we get objects of the right shape
         q, n, k, eta = 3329, 3, 2, 1
         zeropol = modpol(q, n, [0, 0, 0])  # 1 / 2^3
-        zero = Vec(zeropol, zeropol)  # proba 1 / 2^(3*2) = 1 / 64
+        zero = vec(zeropol, zeropol)  # proba 1 / 2^(3*2) = 1 / 64
         seen0 = False
         for _ in range(1000):
             seen0 |= Vec.rand_small_cbd(q, n, k, eta) == zero
@@ -429,7 +439,7 @@ class VecTest(unittest.TestCase):
         q, n = 3329, 4
 
         fc = [223, 1438, 3280, 798]
-        f = Vec(modpol(q, n, fc), modpol(q, n, list(reversed(fc))))
+        f = vec(modpol(q, n, fc), modpol(q, n, list(reversed(fc))))
 
         data = (
             (10, [69, 442, 1009, 245], [224, 1437, 3280, 796]),
@@ -440,7 +450,7 @@ class VecTest(unittest.TestCase):
             g = [g1, list(reversed(g1))]
             self.assertEqual(f.compress(d), g)
 
-            h = Vec(modpol(q, n, hc), modpol(q, n, list(reversed(hc))))
+            h = vec(modpol(q, n, hc), modpol(q, n, list(reversed(hc))))
             self.assertEqual(Vec.decompress(q, n, g, d), h)
 
 
@@ -450,14 +460,14 @@ class MatTest(unittest.TestCase):
         def P(*c):
             return modpol(541, 4, c)
 
-        a = Mat(
-            Vec(P(442, 502, 513, 15), P(368, 166, 37, 135)),
-            Vec(P(479, 532, 116, 41), P(12, 139, 385, 409)),
-            Vec(P(29, 394, 503, 389), P(9, 499, 92, 254)),
+        a = mat(
+            vec(P(442, 502, 513, 15), P(368, 166, 37, 135)),
+            vec(P(479, 532, 116, 41), P(12, 139, 385, 409)),
+            vec(P(29, 394, 503, 389), P(9, 499, 92, 254)),
         )
-        s = Vec(P(2, -2, 0, 1), P(3, -2, -2, -2))
-        e = Vec(P(2, -2, -1, 0), P(1, 2, 2, 1), P(-2, 0, -1, -2))
-        t = Vec(P(30, 252, 401, 332), P(247, 350, 259, 485), P(534, 234, 137, 443))
+        s = vec(P(2, -2, 0, 1), P(3, -2, -2, -2))
+        e = vec(P(2, -2, -1, 0), P(1, 2, 2, 1), P(-2, 0, -1, -2))
+        t = vec(P(30, 252, 401, 332), P(247, 350, 259, 485), P(534, 234, 137, 443))
 
         self.assertEqual(t, a @ s + e)
 
@@ -478,7 +488,7 @@ class MatTest(unittest.TestCase):
 
         # Ensure we get objects of the right shape
         q, n, k = 3, 2, 1
-        zero = Mat(Vec(modpol(q, n, [0, 0])))  # proba 1 / 3^(2*1)
+        zero = mat(vec(modpol(q, n, [0, 0])))  # proba 1 / 3^(2*1)
         seen0 = False
         for _ in range(100):
             seen0 |= Mat.rand_uni(q, n, k) == zero
@@ -492,13 +502,13 @@ class MatTest(unittest.TestCase):
         e = modpol(6, 1, [4])
         f = modpol(6, 1, [5])
 
-        m1 = Mat(Vec(a, b), Vec(c, d))
-        m2 = Mat(Vec(a, c), Vec(b, d))
+        m1 = mat(vec(a, b), vec(c, d))
+        m2 = mat(vec(a, c), vec(b, d))
         self.assertEqual(m1.transpose(), m2)
         self.assertEqual(m2.transpose(), m1)
 
-        m1 = Mat(Vec(a, b, c), Vec(d, e, f))
-        m2 = Mat(Vec(a, d), Vec(b, e), Vec(c, f))
+        m1 = mat(vec(a, b, c), vec(d, e, f))
+        m2 = mat(vec(a, d), vec(b, e), vec(c, f))
         self.assertEqual(m1.transpose(), m2)
         self.assertEqual(m2.transpose(), m1)
 

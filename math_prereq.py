@@ -262,7 +262,7 @@ class ModPol:
 class Vec:
     """Element of R_q^k, ie vector of ModPols (slide 28)."""
 
-    def __init__(self, *v):
+    def __init__(self, v):
         """Build a vector given a list of k ModPols."""
         self.v = tuple(v)
 
@@ -270,19 +270,19 @@ class Vec:
     def rand_uni(cls, q, n, k):
         """Pick an element of R_q^k uniformly at random."""
         v = [ModPol.rand_uni(q, n) for _ in range(k)]
-        return cls(*v)
+        return cls(v)
 
     @classmethod
     def rand_small_uni(cls, q, n, k, eta):
         """Pick a small (size <= eta) element of R_q^k uniformly at random."""
         v = [ModPol.rand_small_uni(q, n, eta) for _ in range(k)]
-        return cls(*v)
+        return cls(v)
 
     @classmethod
     def rand_small_cbd(cls, q, n, k, eta):
         """Pick a small (size <= eta) element of R_q^k with CBD (slide 62)."""
         v = [ModPol.rand_small_cbd(q, n, eta) for _ in range(k)]
-        return cls(*v)
+        return cls(v)
 
     def __repr__(self):
         """Represent self."""
@@ -295,12 +295,12 @@ class Vec:
     def __add__(self, other):
         """Add another Vec."""
         v = [a + b for a, b in zip(self.v, other.v)]
-        return Vec(*v)
+        return Vec(v)
 
     def __sub__(self, other):
         """Subtract another Vec."""
         v = [a - b for a, b in zip(self.v, other.v)]
-        return Vec(*v)
+        return Vec(v)
 
     def __mul__(self, other):
         """Inner product with another Vec; result is a ModPol (slide 28).
@@ -319,13 +319,13 @@ class Vec:
     @classmethod
     def decompress(cls, q, n, v, d):
         """Decompress (slide 57)."""
-        return cls(*[ModPol.decompress(q, n, c, d) for c in v])
+        return cls([ModPol.decompress(q, n, c, d) for c in v])
 
 
 class Mat:
     """Matrix of elements of R_q."""
 
-    def __init__(self, *lines):
+    def __init__(self, lines):
         """Build a matrix given a list of lines (Vec)."""
         self.lines = tuple(lines)
 
@@ -333,7 +333,7 @@ class Mat:
     def rand_uni(cls, q, n, k):
         """Pick an element of R_q^k*k uniformly at random."""
         lines = [Vec.rand_uni(q, n, k) for _ in range(k)]
-        return cls(*lines)
+        return cls(lines)
 
     @classmethod
     def from_seed(cls, q, n, k, rho):
@@ -350,9 +350,9 @@ class Mat:
                 B = rho + j.to_bytes(1) + i.to_bytes(1)
                 a_ij = ModPol.from_seed(q, n, B)
                 a_i.append(a_ij)
-            a.append(Vec(*a_i))
+            a.append(Vec(a_i))
 
-        return cls(*a)
+        return cls(a)
 
     def to_bytes(self):
         """Serialize (line-wise)."""
@@ -374,10 +374,10 @@ class Mat:
     def __matmul__(self, vec):
         """Multiply by a Vec."""
         v = [l * vec for l in self.lines]
-        return Vec(*v)
+        return Vec(v)
 
     def transpose(self):
         """Return self's transpose."""
         m = [vec.v for vec in self.lines]
-        t = [Vec(*[m[j][i] for j in range(len(m))]) for i in range(len(m[0]))]
-        return Mat(*t)
+        t = [Vec([m[j][i] for j in range(len(m))]) for i in range(len(m[0]))]
+        return Mat(t)
