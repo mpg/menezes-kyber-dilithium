@@ -63,7 +63,7 @@ class ModInt:
 
     def __repr__(self):
         """Represent self."""
-        return f"ModInt({self.r}, {self.q})"
+        return f"{type(self).__name__}({self.r}, {self.q})"
 
     def __eq__(self, other):
         """Compare to another ModInt."""
@@ -130,6 +130,8 @@ class ModInt:
 class ModPol:
     """Elements of R_q (slides 25-27), integrated implementation."""
 
+    coef_cls = ModInt
+
     def __init__(self, q, n, c):
         """Build c[0] + c[1] X + ... + c[n-1] X^n-1 mod X^n + 1."""
         if len(c) != n or n == 0:
@@ -142,19 +144,19 @@ class ModPol:
     @classmethod
     def rand_uni(cls, q, n):
         """Pick an element of R_q uniformly at random."""
-        c = [ModInt.rand_uni(q) for _ in range(n)]
+        c = [cls.coef_cls.rand_uni(q) for _ in range(n)]
         return cls(q, n, c)
 
     @classmethod
     def rand_small_uni(cls, q, n, eta):
         """Pick a small (size <= eta) element of R_q uniformly at random."""
-        c = [ModInt.rand_small_uni(q, eta) for _ in range(n)]
+        c = [cls.coef_cls.rand_small_uni(q, eta) for _ in range(n)]
         return cls(q, n, c)
 
     @classmethod
     def rand_small_cbd(cls, q, n, eta):
         """Pick a small (size <= eta) element of R_q with CDB (slide 62)."""
-        c = [ModInt.rand_small_cbd(q, eta) for _ in range(n)]
+        c = [cls.coef_cls.rand_small_cbd(q, eta) for _ in range(n)]
         return cls(q, n, c)
 
     @classmethod
@@ -179,9 +181,9 @@ class ModPol:
             d1 = C[0] + 256 * (C[1] % 16)
             d2 = C[1] // 16 + 16 * C[2]
             if d1 < q:
-                a.append(ModInt(d1, q))
+                a.append(cls.coef_cls(d1, q))
             if d2 < q and len(a) < n:
-                a.append(ModInt(d2, q))
+                a.append(cls.coef_cls(d2, q))
 
         return cls(q, n, a)
 
@@ -202,7 +204,7 @@ class ModPol:
 
     def __repr__(self):
         """Represent self."""
-        return f"ModPol({self.q}, {self.n}, {self.c})"
+        return f"type(self)({self.q}, {self.n}, {self.c})"
 
     def __eq__(self, other):
         """Compare to another ModPol."""
@@ -213,17 +215,17 @@ class ModPol:
         """Add another ModPol."""
         c = [a + b for a, b in zip(self.c, other.c)]
         # No need to reduce mod X^n + 1, the degree didn't increase
-        return ModPol(self.q, self.n, c)
+        return type(self)(self.q, self.n, c)
 
     def __sub__(self, other):
         """Subtract another ModPol."""
         c = [a - b for a, b in zip(self.c, other.c)]
         # No need to reduce mod X^n + 1, the degree didn't increase
-        return ModPol(self.q, self.n, c)
+        return type(self)(self.q, self.n, c)
 
     def __mul__(self, other):
         """Multiply by another ModPol."""
-        c = [ModInt(0, self.q)] * self.n
+        c = [type(self).coef_cls(0, self.q)] * self.n
         for i, a in enumerate(self.c):
             for j, b in enumerate(other.c):
                 p = a * b
@@ -239,7 +241,7 @@ class ModPol:
                     c[k - self.n] -= p
                 else:
                     c[k] += p
-        return ModPol(self.q, self.n, c)
+        return type(self)(self.q, self.n, c)
 
     def size(self):
         """Size of self (slide 33)."""
@@ -256,11 +258,13 @@ class ModPol:
     @classmethod
     def decompress(cls, q, n, c, d):
         """Decompress (slide 57)."""
-        return cls(q, n, [ModInt.decompress(q, y, d) for y in c])
+        return cls(q, n, [cls.coef_cls.decompress(q, y, d) for y in c])
 
 
 class Vec:
     """Element of R_q^k, ie vector of ModPols (slide 28)."""
+
+    item_cls = ModPol
 
     def __init__(self, v):
         """Build a vector given a list of k ModPols."""
@@ -269,24 +273,24 @@ class Vec:
     @classmethod
     def rand_uni(cls, q, n, k):
         """Pick an element of R_q^k uniformly at random."""
-        v = [ModPol.rand_uni(q, n) for _ in range(k)]
+        v = [cls.item_cls.rand_uni(q, n) for _ in range(k)]
         return cls(v)
 
     @classmethod
     def rand_small_uni(cls, q, n, k, eta):
         """Pick a small (size <= eta) element of R_q^k uniformly at random."""
-        v = [ModPol.rand_small_uni(q, n, eta) for _ in range(k)]
+        v = [cls.item_cls.rand_small_uni(q, n, eta) for _ in range(k)]
         return cls(v)
 
     @classmethod
     def rand_small_cbd(cls, q, n, k, eta):
         """Pick a small (size <= eta) element of R_q^k with CBD (slide 62)."""
-        v = [ModPol.rand_small_cbd(q, n, eta) for _ in range(k)]
+        v = [cls.item_cls.rand_small_cbd(q, n, eta) for _ in range(k)]
         return cls(v)
 
     def __repr__(self):
         """Represent self."""
-        return f"Vec({self.v})"
+        return f"{type(self).__name__}({self.v})"
 
     def __eq__(self, other):
         """Compare to another Vec."""
@@ -295,12 +299,12 @@ class Vec:
     def __add__(self, other):
         """Add another Vec."""
         v = [a + b for a, b in zip(self.v, other.v)]
-        return Vec(v)
+        return type(self)(v)
 
     def __sub__(self, other):
         """Subtract another Vec."""
         v = [a - b for a, b in zip(self.v, other.v)]
-        return Vec(v)
+        return type(self)(v)
 
     def __mul__(self, other):
         """Inner product with another Vec; result is a ModPol (slide 28).
@@ -319,11 +323,14 @@ class Vec:
     @classmethod
     def decompress(cls, q, n, v, d):
         """Decompress (slide 57)."""
-        return cls([ModPol.decompress(q, n, c, d) for c in v])
+        return cls([cls.item_cls.decompress(q, n, c, d) for c in v])
 
 
 class Mat:
     """Matrix of elements of R_q."""
+
+    item_cls = ModPol
+    line_cls = Vec
 
     def __init__(self, lines):
         """Build a matrix given a list of lines (Vec)."""
@@ -332,7 +339,7 @@ class Mat:
     @classmethod
     def rand_uni(cls, q, n, k):
         """Pick an element of R_q^k*k uniformly at random."""
-        lines = [Vec.rand_uni(q, n, k) for _ in range(k)]
+        lines = [cls.line_cls.rand_uni(q, n, k) for _ in range(k)]
         return cls(lines)
 
     @classmethod
@@ -348,9 +355,9 @@ class Mat:
             a_i = []
             for j in range(k):
                 B = rho + j.to_bytes(1) + i.to_bytes(1)
-                a_ij = ModPol.from_seed(q, n, B)
+                a_ij = cls.item_cls.from_seed(q, n, B)
                 a_i.append(a_ij)
-            a.append(Vec(a_i))
+            a.append(cls.line_cls(a_i))
 
         return cls(a)
 
@@ -365,7 +372,7 @@ class Mat:
 
     def __repr__(self):
         """Represent self."""
-        return f"Mat({self.lines})"
+        return f"{type(self).__name__}({self.lines})"
 
     def __eq__(self, other):
         """Compare to another Mat."""
@@ -374,10 +381,10 @@ class Mat:
     def __matmul__(self, vec):
         """Multiply by a Vec."""
         v = [l * vec for l in self.lines]
-        return Vec(v)
+        return self.line_cls(v)
 
     def transpose(self):
         """Return self's transpose."""
         m = [vec.v for vec in self.lines]
-        t = [Vec([m[j][i] for j in range(len(m))]) for i in range(len(m[0]))]
-        return Mat(t)
+        t = [[m[j][i] for j in range(len(m))] for i in range(len(m[0]))]
+        return type(self)([self.line_cls(l) for l in t])
