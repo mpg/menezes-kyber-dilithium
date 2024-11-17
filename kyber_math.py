@@ -6,33 +6,11 @@ Some methods follow the actual ML-KEM spec¹ and mention it.
 ¹ https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.pdf
 """
 
-import hashlib
 import secrets
 
 from common_math import ModInt, ModPol, Vec, Mat
 
-
-class XOF:
-    """The XOF wrapper from the spec."""
-
-    def __init__(self):
-        """Create a new XOF context."""
-        self.ctx = hashlib.shake_128()
-        # The hashlib API doesn't have a streaming squeeze() API
-        # so we'll emulate it using digest() and an offset.
-        self.offset = 0
-
-    def absorb(self, data):
-        """Absorb data."""
-        self.ctx.update(data)
-        self.offset = 0
-
-    def squeeze(self, l):
-        """Squeeze the next l bytes out."""
-        # This is very inefficient but it works.
-        out = self.ctx.digest(self.offset + l)[self.offset :]
-        self.offset += l
-        return out
+from kyber_aux import XOF
 
 
 class KModInt(ModInt):
