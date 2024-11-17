@@ -101,6 +101,10 @@ class ModInt:
         sym = pos - eta  # [-eta, eta]
         return cls(sym, q)
 
+
+class KModInt(ModInt):
+    """Modular integer with Kyber extras."""
+
     @classmethod
     def rand_small_cbd(cls, q, eta):
         """Pick a small (size <= eta) ModInt with central binomial
@@ -128,13 +132,13 @@ class ModInt:
 
 
 class ModPol:
-    """Elements of R_q (slides 25-27), integrated implementation."""
+    """Element of R_q (slides 25-27)."""
 
     coef_cls = ModInt
 
     def __init__(self, q, n, c):
         """Build c[0] + c[1] X + ... + c[n-1] X^n-1 mod X^n + 1."""
-        if len(c) != n or n == 0:
+        if len(c) != n or n == 0 or not isinstance(c[0], self.coef_cls):
             raise ValueError
 
         self.c = tuple(c)
@@ -197,6 +201,12 @@ class ModPol:
     def size(self):
         """Size of self (slide 33)."""
         return max((c.size() for c in self.c))
+
+
+class KModPol(ModPol):
+    """Element of R_q with Kyber extras."""
+
+    coef_cls = KModInt
 
     @classmethod
     def rand_small_cbd(cls, q, n, eta):
@@ -268,6 +278,9 @@ class Vec:
 
     def __init__(self, v):
         """Build a vector given a list of k ModPols."""
+        if len(v) == 0 or not isinstance(v[0], self.item_cls):
+            raise ValueError
+
         self.v = tuple(v)
 
     @classmethod
@@ -310,6 +323,12 @@ class Vec:
         """Size of self (slide 33)."""
         return max((f.size() for f in self.v))
 
+
+class KVec(Vec):
+    """Element of R_q^k with Kyber extras."""
+
+    item_cls = KModPol
+
     @classmethod
     def rand_small_cbd(cls, q, n, k, eta):
         """Pick a small (size <= eta) element of R_q^k with CBD (slide 62)."""
@@ -334,6 +353,9 @@ class Mat:
 
     def __init__(self, lines):
         """Build a matrix given a list of lines (Vec)."""
+        if len(lines) == 0 or not isinstance(lines[0], self.line_cls):
+            raise ValueError
+
         self.lines = tuple(lines)
 
     @classmethod
@@ -364,6 +386,9 @@ class Mat:
 
 class KMat(Mat):
     """Matrix of elements of R_q with Kyber extras."""
+
+    line_cls = KVec
+    item_cls = KModPol
 
     @classmethod
     def from_seed(cls, q, n, k, rho):

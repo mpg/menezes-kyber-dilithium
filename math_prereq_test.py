@@ -5,6 +5,9 @@ from math_prereq import (
     ModPol,
     Vec,
     Mat,
+    KModInt,
+    KModPol,
+    KVec,
     KMat,
 )
 
@@ -34,6 +37,11 @@ def get(filename, varname):
 def modpol(q, n, c):
     """Helper building a ModPol from a list of int (not ModInt)."""
     return ModPol(q, n, [ModInt(a, q) for a in c])
+
+
+def kmodpol(q, n, c):
+    """Helper building a KModPol from a list of int (not KModInt)."""
+    return KModPol(q, n, [KModInt(a, q) for a in c])
 
 
 def vec(*v):
@@ -77,16 +85,16 @@ class ModIntTest(unittest.TestCase):
         self.assertEqual(ModInt(4, 5).size(), 1)
 
     def test_round(self):
-        self.assertEqual(ModInt(0, 4).round(), 0)
-        self.assertEqual(ModInt(1, 4).round(), 1)
-        self.assertEqual(ModInt(2, 4).round(), 1)
-        self.assertEqual(ModInt(3, 4).round(), 1)
+        self.assertEqual(KModInt(0, 4).round(), 0)
+        self.assertEqual(KModInt(1, 4).round(), 1)
+        self.assertEqual(KModInt(2, 4).round(), 1)
+        self.assertEqual(KModInt(3, 4).round(), 1)
 
         # example from slide 47
-        self.assertEqual(ModInt(-832, 3329).round(), 0)
-        self.assertEqual(ModInt(832, 3329).round(), 0)
-        self.assertEqual(ModInt(-833, 3329).round(), 1)
-        self.assertEqual(ModInt(833, 3329).round(), 1)
+        self.assertEqual(KModInt(-832, 3329).round(), 0)
+        self.assertEqual(KModInt(832, 3329).round(), 0)
+        self.assertEqual(KModInt(-833, 3329).round(), 1)
+        self.assertEqual(KModInt(833, 3329).round(), 1)
 
     def test_compress_decompress(self):
         # slide 58
@@ -113,8 +121,8 @@ class ModIntTest(unittest.TestCase):
             (18, 0, 0),
         ]
         for x, y, x1 in data:
-            self.assertEqual(ModInt(x, q).compress(d), y)
-            self.assertEqual(ModInt.decompress(q, y, d), ModInt(x1, q))
+            self.assertEqual(KModInt(x, q).compress(d), y)
+            self.assertEqual(KModInt.decompress(q, y, d), ModInt(x1, q))
 
     def test_rand_uni(self):
         # Don't actually test the distribution,
@@ -166,16 +174,16 @@ class ModIntTest(unittest.TestCase):
         times = 100
         q = 3329
         for _ in range(times):
-            r = ModInt.rand_small_cbd(q, 2)
-            if r == ModInt(0, q):
+            r = KModInt.rand_small_cbd(q, 2)
+            if r == KModInt(0, q):
                 seen0 += 1
-            if r == ModInt(1, q):
+            if r == KModInt(1, q):
                 seen1 += 1
-            if r == ModInt(2, q):
+            if r == KModInt(2, q):
                 seen2 += 1
-            if r == ModInt(-1, q):
+            if r == KModInt(-1, q):
                 seenm1 += 1
-            if r == ModInt(-2, q):
+            if r == KModInt(-2, q):
                 seenm2 += 1
         self.assertNotEqual(seen0, 0)
         self.assertNotEqual(seen1, 0)
@@ -236,7 +244,7 @@ class ModPolTest(unittest.TestCase):
 
     def test_round(self):
         # Example from slide 47
-        f = modpol(3329, 4, [3000, 1500, 2010, 37])
+        f = kmodpol(3329, 4, [3000, 1500, 2010, 37])
         g = [0, 1, 1, 0]
         self.assertEqual(f.round(), g)
 
@@ -282,16 +290,16 @@ class ModPolTest(unittest.TestCase):
         max_size = 0
         q, n, eta = 3329, 8, 3
         for _ in range(100):
-            f = ModPol.rand_small_cbd(q, n, eta)
+            f = KModPol.rand_small_cbd(q, n, eta)
             max_size = max(max_size, f.size())
         self.assertEqual(max_size, eta)
 
         # Ensure we get objects of the right shape
         q, n, eta = 3329, 2, 1
-        zero = modpol(q, n, [0, 0])  # proba 1 / 2^2
+        zero = kmodpol(q, n, [0, 0])  # proba 1 / 2^2
         seen0 = False
         for _ in range(50):
-            seen0 |= ModPol.rand_small_cbd(q, n, eta) == zero
+            seen0 |= KModPol.rand_small_cbd(q, n, eta) == zero
         self.assertTrue(seen0)
 
     def test_from_seed_and_to_bytes(self):
@@ -303,24 +311,24 @@ class ModPolTest(unittest.TestCase):
             rho = get(filename, "ρ")
             exp_i, exp_b = get(filename, "A[0, 0]")
             B = rho + bytes.fromhex("0000")
-            gen = ModPol.from_seed(q, n, B)
-            self.assertEqual(gen, modpol(q, n, exp_i))
+            gen = KModPol.from_seed(q, n, B)
+            self.assertEqual(gen, kmodpol(q, n, exp_i))
             self.assertEqual(gen.to_bytes(), exp_b)
 
     def test_compress_decompress(self):
         # slides 59 and 60
         q, n = 3329, 4
-        f = modpol(q, n, [223, 1438, 3280, 798])
+        f = kmodpol(q, n, [223, 1438, 3280, 798])
 
         g10 = [69, 442, 1009, 245]
-        h10 = modpol(q, n, [224, 1437, 3280, 796])
+        h10 = kmodpol(q, n, [224, 1437, 3280, 796])
         self.assertEqual(f.compress(10), g10)
-        self.assertEqual(ModPol.decompress(q, n, g10, 10), h10)
+        self.assertEqual(KModPol.decompress(q, n, g10, 10), h10)
 
         g4 = [1, 7, 0, 4]
-        h4 = modpol(q, n, [208, 1456, 0, 832])
+        h4 = kmodpol(q, n, [208, 1456, 0, 832])
         self.assertEqual(f.compress(4), g4)
-        self.assertEqual(ModPol.decompress(q, n, g4, 4), h4)
+        self.assertEqual(KModPol.decompress(q, n, g4, 4), h4)
 
 
 class VecTest(unittest.TestCase):
@@ -422,17 +430,17 @@ class VecTest(unittest.TestCase):
         max_size = 0
         q, n, k, eta = 3329, 8, 2, 3
         for _ in range(50):
-            v = Vec.rand_small_cbd(q, n, k, eta)
+            v = KVec.rand_small_cbd(q, n, k, eta)
             max_size = max(max_size, v.size())
         self.assertEqual(max_size, eta)
 
         # Ensure we get objects of the right shape
         q, n, k, eta = 3329, 3, 2, 1
-        zeropol = modpol(q, n, [0, 0, 0])  # 1 / 2^3
-        zero = vec(zeropol, zeropol)  # proba 1 / 2^(3*2) = 1 / 64
+        zeropol = kmodpol(q, n, [0, 0, 0])  # 1 / 2^3
+        zero = KVec([zeropol, zeropol])  # proba 1 / 2^(3*2) = 1 / 64
         seen0 = False
         for _ in range(1000):
-            seen0 |= Vec.rand_small_cbd(q, n, k, eta) == zero
+            seen0 |= KVec.rand_small_cbd(q, n, k, eta) == zero
         self.assertTrue(seen0)
 
     def test_compress_decompress(self):
@@ -440,7 +448,7 @@ class VecTest(unittest.TestCase):
         q, n = 3329, 4
 
         fc = [223, 1438, 3280, 798]
-        f = vec(modpol(q, n, fc), modpol(q, n, list(reversed(fc))))
+        f = KVec([kmodpol(q, n, fc), kmodpol(q, n, list(reversed(fc)))])
 
         data = (
             (10, [69, 442, 1009, 245], [224, 1437, 3280, 796]),
@@ -451,8 +459,8 @@ class VecTest(unittest.TestCase):
             g = [g1, list(reversed(g1))]
             self.assertEqual(f.compress(d), g)
 
-            h = vec(modpol(q, n, hc), modpol(q, n, list(reversed(hc))))
-            self.assertEqual(Vec.decompress(q, n, g, d), h)
+            h = KVec([kmodpol(q, n, hc), kmodpol(q, n, list(reversed(hc)))])
+            self.assertEqual(KVec.decompress(q, n, g, d), h)
 
 
 class MatTest(unittest.TestCase):

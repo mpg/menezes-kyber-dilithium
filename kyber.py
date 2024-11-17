@@ -4,7 +4,7 @@ Implementation of a simplified version of Kyber.
 
 import secrets
 
-from math_prereq import Vec, KMat, ModPol, ModInt
+from math_prereq import KModInt, KModPol, KVec, KMat
 
 # Kyber (all sizes)
 q = 3329
@@ -22,8 +22,8 @@ def genkey():
     rho = secrets.token_bytes(32)
     A = KMat.from_seed(q, n, k, rho)
 
-    s = Vec.rand_small_cbd(q, n, k, eta1)
-    e = Vec.rand_small_cbd(q, n, k, eta2)
+    s = KVec.rand_small_cbd(q, n, k, eta1)
+    e = KVec.rand_small_cbd(q, n, k, eta2)
 
     t = A @ s + e
 
@@ -38,13 +38,13 @@ def encrypt(pub, msg):
     rho, t = pub
     A = KMat.from_seed(q, n, k, rho)
 
-    r = Vec.rand_small_cbd(q, n, k, eta1)
-    e1 = Vec.rand_small_cbd(q, n, k, eta2)
-    e2 = ModPol.rand_small_cbd(q, n, eta2)
+    r = KVec.rand_small_cbd(q, n, k, eta1)
+    e1 = KVec.rand_small_cbd(q, n, k, eta2)
+    e2 = KModPol.rand_small_cbd(q, n, eta2)
 
     # q2m := ⌈q/2⌋ * m
     q2 = q // 2 + 1  # we know q is odd
-    q2m = ModPol(q, n, [ModInt(b * q2, q) for b in msg])
+    q2m = KModPol(q, n, [KModInt(b * q2, q) for b in msg])
 
     u = A.transpose() @ r + e1
     v = t * r + e2 + q2m
@@ -60,7 +60,7 @@ def decrypt(prv, ct):
     s = prv
     c1, c2 = ct
 
-    uu = Vec.decompress(q, n, c1, du)
-    vv = ModPol.decompress(q, n, c2, dv)
+    uu = KVec.decompress(q, n, c1, du)
+    vv = KModPol.decompress(q, n, c2, dv)
 
     return (vv - s * uu).round()
