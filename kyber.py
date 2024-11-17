@@ -4,7 +4,7 @@ Implementation of a simplified version of Kyber.
 
 import secrets
 
-from math_prereq import KModInt, KModPol, KVec, KMat
+from kyber_math import KModInt, KModPol, KVec, KMat
 
 # Kyber (all sizes)
 q = 3329
