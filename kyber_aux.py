@@ -10,8 +10,19 @@ These follow the spec¹ as they are omitted from the lectures
 import hashlib
 
 
+def bits_from_bytes(B):
+    """Algorithm 4 BytesToBits from the spec (p. 20)."""
+    b = []
+    for byte in B:
+        for _ in range(8):
+            b.append(byte % 2)
+            byte //= 2
+
+    return b
+
+
 class XOF:
-    """The XOF wrapper from the spec (4.1, pp. 19-20)."""
+    """The XOF wrapper from the spec (sec. 4.1, pp. 19-20)."""
 
     def __init__(self):
         """Create a new XOF context."""
@@ -31,3 +42,20 @@ class XOF:
         out = self.ctx.digest(self.offset + l)[self.offset :]
         self.offset += l
         return out
+
+
+class PRF:  # pylint: disable=too-few-public-methods
+    """The PRF from the spec (sec. 4.1, p. 18), stateful version."""
+
+    # In the spec, callers have to maintain a counter and pass it
+    # on each call as well as the seed. Here we hold these internally.
+    def __init__(self, seed):
+        """Create a new stateful PRF."""
+        self.s = seed
+        self.b = 0
+
+    def next(self, eta):
+        """Return PRF_eta(s, b) and update b."""
+        ctx = hashlib.shake_256(self.s + self.b.to_bytes(1))
+        self.b += 1
+        return ctx.digest(64 * eta)  # size in bytes (the spec has bits)

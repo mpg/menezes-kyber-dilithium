@@ -1,6 +1,7 @@
 import unittest
 
 from kyber_math import KModInt, KModPol, KVec, KMat
+from kyber_aux import PRF
 
 
 def get(filename, varname):
@@ -122,6 +123,19 @@ class KModPolTest(unittest.TestCase):
             seen0 |= KModPol.rand_small_cbd(q, n, eta) == zero
         self.assertTrue(seen0)
 
+    def test_cbd_from_prf(self):
+        q, n = 3329, 256
+        for bits, eta1 in ((512, 3), (768, 2), (1024, 2)):
+            filename = f"ML-KEM-{bits}.txt"
+
+            sigma = get(filename, "σ")
+            ref_s0_coef, _ = get(filename, "s[0]")
+            ref_s0 = kmodpol(q, n, ref_s0_coef)
+
+            prf = PRF(sigma)
+            got_s0 = KModPol.cbd_from_prf(eta1, prf)
+            self.assertEqual(got_s0, ref_s0)
+
     def test_from_seed_and_to_bytes(self):
         q, n = 3329, 256
 
@@ -189,6 +203,42 @@ class KVecTest(unittest.TestCase):
 
             h = KVec([kmodpol(q, n, hc), kmodpol(q, n, list(reversed(hc)))])
             self.assertEqual(KVec.decompress(q, n, g, d), h)
+
+    def test_cbd_from_prf_keygen(self):
+        # Simulates steps from K-PKE.KeyGen
+        for bits, eta1, k in ((512, 3, 2), (768, 2, 3), (1024, 2, 4)):
+            filename = f"ML-KEM-{bits}.txt"
+
+            sigma = get(filename, "σ")
+            ref_s = get(filename, "s")
+            ref_e = get(filename, "e")
+
+            prf = PRF(sigma)
+            got_s = KVec.cbd_from_prf(k, eta1, prf)
+            got_e = KVec.cbd_from_prf(k, eta1, prf)
+
+            self.assertEqual(got_s.to_bytes(), ref_s)
+            self.assertEqual(got_e.to_bytes(), ref_e)
+
+    def test_cbd_from_prf_encrypt(self):
+        eta2 = 2
+        # Simulates steps from K-PKE.Encrypt
+        for bits, eta1, k in ((512, 3, 2), (768, 2, 3), (1024, 2, 4)):
+            filename = f"ML-KEM-{bits}.txt"
+
+            r = get(filename, "r")
+            ref_y = get(filename, "y")
+            ref_e1 = get(filename, "e1")
+            ref_e2 = get(filename, "e2")
+
+            prf = PRF(r)
+            got_y = KVec.cbd_from_prf(k, eta1, prf)
+            got_e1 = KVec.cbd_from_prf(k, eta2, prf)
+            got_e2 = KModPol.cbd_from_prf(eta2, prf)
+
+            self.assertEqual(got_y.to_bytes(), ref_y)
+            self.assertEqual(got_e1.to_bytes(), ref_e1)
+            self.assertEqual(got_e2.to_bytes(), ref_e2)
 
 
 class KMatTest(unittest.TestCase):

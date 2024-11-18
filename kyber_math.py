@@ -10,7 +10,16 @@ import secrets
 
 from common_math import ModInt, ModPol, Vec, Mat
 
-from kyber_aux import XOF
+from kyber_aux import XOF, bits_from_bytes
+
+# Currently we're in a transitional state because some method take q, n as
+# arguments, and some use the global constants; so we need disting names.
+# When all methods have test cases with the appropriate size, we can make all
+# methods use the global constants instead.
+#
+# Common to all Kyber sizes.
+Q = 3329
+N = 256
 
 
 class KModInt(ModInt):
@@ -24,6 +33,13 @@ class KModInt(ModInt):
         b = [secrets.randbits(1) for _ in range(eta)]
         c = sum(ai - bi for ai, bi in zip(a, b))
         return cls(c, q)
+
+    @classmethod
+    def cbd_from_bits(cls, eta, bits):
+        """Small (size <= eta) modular integer with CBD from bits."""
+        # This is lines 3, 4 and 5 (rhs) of Algorithm 8 SamplePolyCBD
+        r = sum(bits[:eta]) - sum(bits[eta:])
+        return cls(r, Q)
 
     def round(self):
         """Rounding (slide 47)."""
@@ -52,6 +68,19 @@ class KModPol(ModPol):
         """Pick a small (size <= eta) element of R_q with CDB (slide 62)."""
         c = [cls.coef_cls.rand_small_cbd(q, eta) for _ in range(n)]
         return cls(q, n, c)
+
+    @classmethod
+    def cbd_from_prf(cls, eta, prf):
+        """Small (size <= eta) element of R_q using CBD from a PRF."""
+        # This is Algorithm 8 SamplePolyCBD_eta, plus the PRF invocation.
+        B = prf.next(eta)
+        assert len(B) == 64 * eta
+        bits = bits_from_bytes(B)
+        c = [
+            cls.coef_cls.cbd_from_bits(eta, bits[i : i + 2 * eta])
+            for i in range(0, len(bits), 2 * eta)
+        ]
+        return cls(Q, N, c)
 
     @classmethod
     def from_seed(cls, q, n, B):
@@ -121,9 +150,21 @@ class KVec(Vec):
         v = [cls.item_cls.rand_small_cbd(q, n, eta) for _ in range(k)]
         return cls(v)
 
+    @classmethod
+    def cbd_from_prf(cls, k, eta, prf):
+        """Generate a pseudo-random CBD small vector from a PRF."""
+        # This is the loops in Algorithm 13 lines 8-11 and 12-15
+        # and Algorithm 14 lines 9-12 and 13-16.
+        v = [cls.item_cls.cbd_from_prf(eta, prf) for _ in range(k)]
+        return cls(v)
+
     def compress(self, d):
         """Compress (slide 57)."""
         return [x.compress(d) for x in self.v]
+
+    def to_bytes(self):
+        """Serialize."""
+        return b"".join((x.to_bytes() for x in self.v))
 
     @classmethod
     def decompress(cls, q, n, v, d):
