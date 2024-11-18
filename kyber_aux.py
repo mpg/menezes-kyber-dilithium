@@ -59,3 +59,10 @@ class PRF:  # pylint: disable=too-few-public-methods
         ctx = hashlib.shake_256(self.s + self.b.to_bytes(1))
         self.b += 1
         return ctx.digest(64 * eta)  # size in bytes (the spec has bits)
+
+
+def G(c):
+    """The G function from the spec: section 4.1, page 19, (4.5)."""
+    # Also split the output in two, see the text above (4.5)
+    g = hashlib.sha3_512(c).digest()
+    return g[:32], g[32:]
