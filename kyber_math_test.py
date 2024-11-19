@@ -12,18 +12,6 @@ def kmodpol(q, n, c):
 
 
 class KModIntTest(unittest.TestCase):
-    def test_round(self):
-        self.assertEqual(KModInt(0, 4).round(), 0)
-        self.assertEqual(KModInt(1, 4).round(), 1)
-        self.assertEqual(KModInt(2, 4).round(), 1)
-        self.assertEqual(KModInt(3, 4).round(), 1)
-
-        # example from slide 47
-        self.assertEqual(KModInt(-832, 3329).round(), 0)
-        self.assertEqual(KModInt(832, 3329).round(), 0)
-        self.assertEqual(KModInt(-833, 3329).round(), 1)
-        self.assertEqual(KModInt(833, 3329).round(), 1)
-
     def test_compress_decompress(self):
         # slide 58
         q, d = 19, 2
@@ -54,12 +42,6 @@ class KModIntTest(unittest.TestCase):
 
 
 class KModPolTest(unittest.TestCase):
-    def test_round(self):
-        # Example from slide 47
-        f = kmodpol(3329, 4, [3000, 1500, 2010, 37])
-        g = [0, 1, 1, 0]
-        self.assertEqual(f.round(), g)
-
     def test_cbd_from_prf(self):
         q, n = 3329, 256
         for bits, eta1 in ((512, 3), (768, 2), (1024, 2)):

@@ -30,10 +30,6 @@ class KModInt(ModInt):
         r = sum(bits[:eta]) - sum(bits[eta:])
         return cls(r, Q)
 
-    def round(self):
-        """Rounding (slide 47)."""
-        return int(self.q / 4 <= self.r <= 3 * self.q / 4)
-
     def compress(self, d):
         """Compress (slide 57)."""
         # round() is not what we want as round(0.5) == 0
@@ -107,10 +103,6 @@ class KModPol(ModPol):
             out += d1.to_bytes(1) + d2.to_bytes(1) + d3.to_bytes(1)
 
         return out
-
-    def round(self):
-        """Rounding (slide 47)."""
-        return [a.round() for a in self.c]
 
     def compress(self, d):
         """Compress (slide 57)."""
