@@ -52,31 +52,6 @@ class KModIntTest(unittest.TestCase):
             self.assertEqual(KModInt(x, q).compress(d), y)
             self.assertEqual(KModInt.decompress(q, y, d), KModInt(x1, q))
 
-    def test_rand_small_cbd(self):
-        # Don't actually test the distribution,
-        # only the output range.
-        seen0, seen1, seen2, seenm1, seenm2 = 0, 0, 0, 0, 0
-        times = 100
-        q = 3329
-        for _ in range(times):
-            r = KModInt.rand_small_cbd(q, 2)
-            if r == KModInt(0, q):
-                seen0 += 1
-            if r == KModInt(1, q):
-                seen1 += 1
-            if r == KModInt(2, q):
-                seen2 += 1
-            if r == KModInt(-1, q):
-                seenm1 += 1
-            if r == KModInt(-2, q):
-                seenm2 += 1
-        self.assertNotEqual(seen0, 0)
-        self.assertNotEqual(seen1, 0)
-        self.assertNotEqual(seen2, 0)
-        self.assertNotEqual(seenm1, 0)
-        self.assertNotEqual(seenm2, 0)
-        self.assertEqual(seen0 + seen1 + seen2 + seenm1 + seenm2, times)
-
 
 class KModPolTest(unittest.TestCase):
     def test_round(self):
@@ -84,24 +59,6 @@ class KModPolTest(unittest.TestCase):
         f = kmodpol(3329, 4, [3000, 1500, 2010, 37])
         g = [0, 1, 1, 0]
         self.assertEqual(f.round(), g)
-
-    def test_rand_small_cbd(self):
-        # Don't actually test the distribution,
-        # only the output range.
-        max_size = 0
-        q, n, eta = 3329, 8, 3
-        for _ in range(100):
-            f = KModPol.rand_small_cbd(q, n, eta)
-            max_size = max(max_size, f.size())
-        self.assertEqual(max_size, eta)
-
-        # Ensure we get objects of the right shape
-        q, n, eta = 3329, 2, 1
-        zero = kmodpol(q, n, [0, 0])  # proba 1 / 2^2
-        seen0 = False
-        for _ in range(50):
-            seen0 |= KModPol.rand_small_cbd(q, n, eta) == zero
-        self.assertTrue(seen0)
 
     def test_cbd_from_prf(self):
         q, n = 3329, 256
@@ -146,25 +103,6 @@ class KModPolTest(unittest.TestCase):
 
 
 class KVecTest(unittest.TestCase):
-    def test_rand_small_cbd(self):
-        # Don't actually test the distribution,
-        # only the output range.
-        max_size = 0
-        q, n, k, eta = 3329, 8, 2, 3
-        for _ in range(50):
-            v = KVec.rand_small_cbd(q, n, k, eta)
-            max_size = max(max_size, v.size())
-        self.assertEqual(max_size, eta)
-
-        # Ensure we get objects of the right shape
-        q, n, k, eta = 3329, 3, 2, 1
-        zeropol = kmodpol(q, n, [0, 0, 0])  # 1 / 2^3
-        zero = KVec([zeropol, zeropol])  # proba 1 / 2^(3*2) = 1 / 64
-        seen0 = False
-        for _ in range(1000):
-            seen0 |= KVec.rand_small_cbd(q, n, k, eta) == zero
-        self.assertTrue(seen0)
-
     def test_compress_decompress(self):
         # recycle examples from slide 59 and 60
         q, n = 3329, 4

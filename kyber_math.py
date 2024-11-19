@@ -6,8 +6,6 @@ Some methods follow the actual ML-KEM spec¹ and mention it.
 ¹ https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.pdf
 """
 
-import secrets
-
 from common_math import ModInt, ModPol, Vec, Mat
 
 from kyber_aux import XOF, bits_from_bytes
@@ -24,15 +22,6 @@ N = 256
 
 class KModInt(ModInt):
     """Modular integer with Kyber extras."""
-
-    @classmethod
-    def rand_small_cbd(cls, q, eta):
-        """Pick a small (size <= eta) ModInt with central binomial
-        distribution (slide 62)."""
-        a = [secrets.randbits(1) for _ in range(eta)]
-        b = [secrets.randbits(1) for _ in range(eta)]
-        c = sum(ai - bi for ai, bi in zip(a, b))
-        return cls(c, q)
 
     @classmethod
     def cbd_from_bits(cls, eta, bits):
@@ -62,12 +51,6 @@ class KModPol(ModPol):
     """Element of R_q with Kyber extras."""
 
     coef_cls = KModInt
-
-    @classmethod
-    def rand_small_cbd(cls, q, n, eta):
-        """Pick a small (size <= eta) element of R_q with CDB (slide 62)."""
-        c = [cls.coef_cls.rand_small_cbd(q, eta) for _ in range(n)]
-        return cls(q, n, c)
 
     @classmethod
     def cbd_from_prf(cls, eta, prf):
@@ -143,12 +126,6 @@ class KVec(Vec):
     """Element of R_q^k with Kyber extras."""
 
     item_cls = KModPol
-
-    @classmethod
-    def rand_small_cbd(cls, q, n, k, eta):
-        """Pick a small (size <= eta) element of R_q^k with CBD (slide 62)."""
-        v = [cls.item_cls.rand_small_cbd(q, n, eta) for _ in range(k)]
-        return cls(v)
 
     @classmethod
     def cbd_from_prf(cls, k, eta, prf):
