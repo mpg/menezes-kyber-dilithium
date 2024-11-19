@@ -2,7 +2,7 @@
 Implementation of a simplified version of Kyber.
 """
 
-from kyber_math import KModInt, KModPol, KVec, KMat
+from kyber_math import KModPol, KVec, KMat
 from kyber_aux import G, PRF
 
 # Kyber (all sizes)
@@ -48,12 +48,10 @@ def encrypt(pub, msg, r):
     e1 = KVec.cbd_from_prf(k, eta2, prf)
     e2 = KModPol.cbd_from_prf(eta2, prf)
 
-    # q2m := ⌈q/2⌋ * m
-    q2 = q // 2 + 1  # we know q is odd
-    q2m = KModPol(q, n, [KModInt(b * q2, q) for b in msg])
+    mu = KModPol.decompress(q, n, msg, 1)
 
     u = A.transpose() @ r + e1
-    v = t * r + e2 + q2m
+    v = t * r + e2 + mu
 
     c1 = u.compress(du)
     c2 = v.compress(dv)
@@ -69,4 +67,4 @@ def decrypt(prv, ct):
     uu = KVec.decompress(q, n, c1, du)
     vv = KModPol.decompress(q, n, c2, dv)
 
-    return (vv - s * uu).round()
+    return (vv - s * uu).compress(1)
