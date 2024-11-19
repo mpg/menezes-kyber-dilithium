@@ -1,14 +1,17 @@
 import unittest
 
-from random import randint
+import secrets
 
 from kyber import genkey, encrypt, decrypt
 
 
 class kyber_pke_test(unittest.TestCase):
     def test_gen_enc_dec(self):
-        pub, prv = genkey()
-        msg = [randint(0, 1) for _ in range(256)]
-        ct = encrypt(pub, msg)
+        d = secrets.token_bytes(32)
+        r = secrets.token_bytes(32)
+        msg = [secrets.randbits(1) for _ in range(256)]
+
+        pub, prv = genkey(d)
+        ct = encrypt(pub, msg, r)
         dec = decrypt(prv, ct)
         self.assertEqual(dec, msg)

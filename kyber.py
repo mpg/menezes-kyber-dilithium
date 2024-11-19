@@ -2,9 +2,8 @@
 Implementation of a simplified version of Kyber.
 """
 
-import secrets
-
 from kyber_math import KModInt, KModPol, KVec, KMat
+from kyber_aux import G, PRF
 
 # Kyber (all sizes)
 q = 3329
@@ -17,30 +16,37 @@ du = 10
 dv = 4
 
 
-def genkey():
+def genkey(d):
     """Generate a keypair for "full" Kyber-PKE (slide 65)."""
-    rho = secrets.token_bytes(32)
+    # This is K-PKE.GenKey except for the parts related to NTT
+    # and serialization of the outputs.
+    rho, sigma = G(d + k.to_bytes(1))
+    prf = PRF(sigma)
+
     A = KMat.from_seed(q, n, k, rho)
 
-    s = KVec.rand_small_cbd(q, n, k, eta1)
-    e = KVec.rand_small_cbd(q, n, k, eta2)
+    s = KVec.cbd_from_prf(k, eta1, prf)
+    e = KVec.cbd_from_prf(k, eta2, prf)
 
     t = A @ s + e
 
     return ((rho, t), s)
 
 
-def encrypt(pub, msg):
+def encrypt(pub, msg, r):
     """Encrypt msg (list of 0, 1) with "full" Kyber-PKE (slide 66)."""
+    # This is K-PKE.Encrypt except for the parts related to NTT
+    # and (de)serialization of the inputs and outputs.
     if len(msg) != n or any(b not in (0, 1) for b in msg):
         raise ValueError
 
     rho, t = pub
     A = KMat.from_seed(q, n, k, rho)
 
-    r = KVec.rand_small_cbd(q, n, k, eta1)
-    e1 = KVec.rand_small_cbd(q, n, k, eta2)
-    e2 = KModPol.rand_small_cbd(q, n, eta2)
+    prf = PRF(r)
+    r = KVec.cbd_from_prf(k, eta1, prf)
+    e1 = KVec.cbd_from_prf(k, eta2, prf)
+    e2 = KModPol.cbd_from_prf(eta2, prf)
 
     # q2m := ⌈q/2⌋ * m
     q2 = q // 2 + 1  # we know q is odd
