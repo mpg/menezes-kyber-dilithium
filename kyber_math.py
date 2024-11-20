@@ -23,15 +23,46 @@ Q = 3329
 N = 256
 
 
+def ints_from_bits(d, bits):
+    """Turn an iterable of bits into a list of d-bit integers."""
+    ints = []
+    x = 0
+    for i, b in enumerate(bits):
+        x += b * 2 ** (i % d)
+        if i % d == d - 1:
+            ints.append(x)
+            x = 0
+    return ints
+
+
+def bits_from_ints(d, ints):
+    """Turn an iterable of d-bit integers into a list of bits."""
+    bits = []
+    for x in ints:
+        for _ in range(d):
+            bits.append(x % 2)
+            x //= 2
+    return bits
+
+
+def bytes_from_bits(b):
+    """Algorithm 3 BitsToBytes from the spec (p. 20)."""
+    return b"".join(x.to_bytes(1) for x in ints_from_bits(8, b))
+
+
 def bits_from_bytes(B):
     """Algorithm 4 BytesToBits from the spec (p. 20)."""
-    b = []
-    for byte in B:
-        for _ in range(8):
-            b.append(byte % 2)
-            byte //= 2
+    return bits_from_ints(8, B)
 
-    return b
+
+def bytes_from_ints(d, F):
+    """Algorithm 5 ByteEncode_d from the spec (p. 22)."""
+    return bytes_from_bits(bits_from_ints(d, F))
+
+
+def ints_from_bytes(d, B):
+    """Algorithm 6 ByteDecode_d from the spec (p. 22)."""
+    return ints_from_bits(d, bits_from_bytes(B))
 
 
 class KModInt(ModInt):
@@ -94,8 +125,8 @@ class KModPol(ModPol):
         a = []
         while len(a) < n:
             C = ctx.squeeze(3)
-            d1 = C[0] + 256 * (C[1] % 16)
-            d2 = C[1] // 16 + 16 * C[2]
+            # pylint: disable-next=unbalanced-tuple-unpacking
+            d1, d2 = ints_from_bytes(12, C)
             if d1 < q:
                 a.append(cls.coef_cls(d1, q))
             if d2 < q and len(a) < n:
@@ -104,19 +135,11 @@ class KModPol(ModPol):
         return cls(q, n, a)
 
     def to_bytes(self):
-        """Serialize, based on ByteEncode_12 from the spec."""
+        """Serialize: ByteEncode_12 from the spec."""
         if self.q.bit_length() != 12 or self.n % 8 != 0:
             raise NotImplementedError
 
-        out = bytes()
-        for i in range(0, len(self.c), 2):
-            c1, c2 = int(self.c[i]), int(self.c[i + 1])
-            d1 = c1 % 256
-            d2 = c1 // 256 + 16 * (c2 % 16)
-            d3 = c2 // 16
-            out += d1.to_bytes(1) + d2.to_bytes(1) + d3.to_bytes(1)
-
-        return out
+        return bytes_from_ints(12, (int(c_i) for c_i in self.c))
 
     def compress(self, d):
         """Compress (slide 57)."""
