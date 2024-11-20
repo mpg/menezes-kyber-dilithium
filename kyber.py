@@ -3,7 +3,7 @@ Implementation of a simplified version of Kyber.
 """
 
 from kyber_math import KModPol, KVec, KMat
-from kyber_aux import G, PRF
+from kyber_sym import G, PRF
 
 # Kyber (all sizes)
 q = 3329

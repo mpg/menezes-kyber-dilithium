@@ -1,6 +1,6 @@
 import unittest
 
-from kyber_aux import G
+from kyber_sym import G
 
 from test_common import get
 

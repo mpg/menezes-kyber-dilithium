@@ -1,24 +1,13 @@
 """
-Auxiliary tools for Kyber.
+Symmetric crypto for Kyber.
 
-These follow the spec¹ as they are omitted from the lectures
-(see slide 78 "Omitted details").
-
+This will be section 4.1 from the spec¹: cryptographic functions.
 ¹ https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.pdf
+
+These are omitted from the lectures (see slide 78 "Omitted details").
 """
 
 import hashlib
-
-
-def bits_from_bytes(B):
-    """Algorithm 4 BytesToBits from the spec (p. 20)."""
-    b = []
-    for byte in B:
-        for _ in range(8):
-            b.append(byte % 2)
-            byte //= 2
-
-    return b
 
 
 class XOF:

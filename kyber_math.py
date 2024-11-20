@@ -1,6 +1,9 @@
 """
 Extends mathematical objects (from V1b) with Kyber speficic methods.
 
+This will be section 4.2 from the spec¹: conversion and compression
+algorithms (4.2.1), as well as sampling algorithms (4.2.2).
+
 Some methods follow the lectures, and mention a slide number.
 Some methods follow the actual ML-KEM spec¹ and mention it.
 ¹ https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.pdf
@@ -8,7 +11,7 @@ Some methods follow the actual ML-KEM spec¹ and mention it.
 
 from common_math import ModInt, ModPol, Vec, Mat
 
-from kyber_aux import XOF, bits_from_bytes
+from kyber_sym import XOF
 
 # Currently we're in a transitional state because some method take q, n as
 # arguments, and some use the global constants; so we need disting names.
@@ -18,6 +21,17 @@ from kyber_aux import XOF, bits_from_bytes
 # Common to all Kyber sizes.
 Q = 3329
 N = 256
+
+
+def bits_from_bytes(B):
+    """Algorithm 4 BytesToBits from the spec (p. 20)."""
+    b = []
+    for byte in B:
+        for _ in range(8):
+            b.append(byte % 2)
+            byte //= 2
+
+    return b
 
 
 class KModInt(ModInt):

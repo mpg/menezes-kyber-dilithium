@@ -1,7 +1,7 @@
 import unittest
 
 from kyber_math import KModInt, KModPol, KVec, KMat
-from kyber_aux import PRF
+from kyber_sym import PRF
 
 from test_common import get
 
