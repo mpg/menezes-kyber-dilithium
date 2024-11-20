@@ -141,6 +141,12 @@ class KModPol(ModPol):
 
         return bytes_from_ints(12, (int(c_i) for c_i in self.c))
 
+    @classmethod
+    def from_bytes(cls, B):
+        """Deserialize: ByteDecode_12 from the spec."""
+        c = ints_from_bytes(12, B)
+        return cls(Q, N, [cls.coef_cls(c_i, Q) for c_i in c])
+
     def compress(self, d):
         """Compress (slide 57)."""
         return [c.compress(d) for c in self.c]
@@ -170,7 +176,15 @@ class KVec(Vec):
 
     def to_bytes(self):
         """Serialize."""
-        return b"".join((x.to_bytes() for x in self.v))
+        return b"".join(x.to_bytes() for x in self.v)
+
+    @classmethod
+    def from_bytes(cls, B):
+        """Deserialize."""
+        size = 12 * 32  # 12 bits/coeff * 256 coeffs / 8 bits/byte
+        chunks = [B[i : i + size] for i in range(0, len(B), size)]
+        v = [cls.item_cls.from_bytes(chunk) for chunk in chunks]
+        return cls(v)
 
     @classmethod
     def decompress(cls, q, n, v, d):
@@ -204,10 +218,5 @@ class KMat(Mat):
         return cls(a)
 
     def to_bytes(self):
-        """Serialize (line-wise)."""
-        out = bytes()
-        for line in self.lines:
-            for x in line.v:
-                out += x.to_bytes()
-
-        return out
+        """Serialize (line-wise, only used in tests)."""
+        return b"".join(l.to_bytes() for l in self.lines)

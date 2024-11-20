@@ -55,18 +55,30 @@ class KModPolTest(unittest.TestCase):
             got_s0 = KModPol.cbd_from_prf(eta1, prf)
             self.assertEqual(got_s0, ref_s0)
 
-    def test_uni_from_seed_and_to_bytes(self):
+    def test_uni_from_seed(self):
         q, n = 3329, 256
 
         for bits in (512, 768, 1024):
             filename = f"ML-KEM-{bits}.txt"
 
             rho = get(filename, "ρ")
-            exp_i, exp_b = get(filename, "A[0, 0]")
+            exp_i, _ = get(filename, "A[0, 0]")
             B = rho + bytes.fromhex("0000")
             gen = KModPol.uni_from_seed(q, n, B)
             self.assertEqual(gen, kmodpol(q, n, exp_i))
-            self.assertEqual(gen.to_bytes(), exp_b)
+
+    def test_to_bytes_and_from_bytes(self):
+        q, n = 3329, 256
+
+        for bits in (512, 768, 1024):
+            filename = f"ML-KEM-{bits}.txt"
+
+            for name in "A[0, 0]", "s[0]", "v":
+                coeffs, ref_bytes = get(filename, name)
+                pol = kmodpol(q, n, coeffs)
+
+                self.assertEqual(pol.to_bytes(), ref_bytes)
+                self.assertEqual(KModPol.from_bytes(ref_bytes), pol)
 
     def test_compress_decompress(self):
         # slides 59 and 60
@@ -103,6 +115,13 @@ class KVecTest(unittest.TestCase):
 
             h = KVec([kmodpol(q, n, hc), kmodpol(q, n, list(reversed(hc)))])
             self.assertEqual(KVec.decompress(q, n, g, d), h)
+
+    def test_from_bytes_to_bytes(self):
+        for bits in (512, 768, 1024):
+            filename = f"ML-KEM-{bits}.txt"
+            for varname in "s", "e", "t", "u", "uᵈ":
+                ref = get(filename, varname)
+                self.assertEqual(KVec.from_bytes(ref).to_bytes(), ref)
 
     def test_cbd_from_prf_keygen(self):
         # Simulates steps from K-PKE.KeyGen
