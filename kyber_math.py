@@ -76,7 +76,7 @@ class KModPol(ModPol):
         return cls(Q, N, c)
 
     @classmethod
-    def from_seed(cls, q, n, B):
+    def uni_from_seed(cls, q, n, B):
         """Generate pseudo-random element of R_q based on a seed."""
         # This is essentially Algorithm 7 SampleNTT from the spec.
         # The algorithm in the spec ouputs 256 elements in Z_q, which are
@@ -162,7 +162,7 @@ class KMat(Mat):
     item_cls = KModPol
 
     @classmethod
-    def from_seed(cls, q, n, k, rho):
+    def uni_from_seed(cls, q, n, k, rho):
         """Generate pseudo-random square matrix based on a seed."""
         # This is lines 3-7 in Algorithm 13 K-PKE.KeyGen or equivalently
         # lines 4-8 in Algorithm 14 K-PKE.Encrypt in the spec,
@@ -174,7 +174,7 @@ class KMat(Mat):
             a_i = []
             for j in range(k):
                 B = rho + j.to_bytes(1) + i.to_bytes(1)
-                a_ij = cls.item_cls.from_seed(q, n, B)
+                a_ij = cls.item_cls.uni_from_seed(q, n, B)
                 a_i.append(a_ij)
             a.append(cls.line_cls(a_i))
 

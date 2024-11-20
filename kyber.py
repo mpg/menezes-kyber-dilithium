@@ -23,7 +23,7 @@ def genkey(d):
     rho, sigma = G(d + k.to_bytes(1))
     prf = PRF(sigma)
 
-    A = KMat.from_seed(q, n, k, rho)
+    A = KMat.uni_from_seed(q, n, k, rho)
 
     s = KVec.cbd_from_prf(k, eta1, prf)
     e = KVec.cbd_from_prf(k, eta2, prf)
@@ -41,7 +41,7 @@ def encrypt(pub, msg, r):
         raise ValueError
 
     rho, t = pub
-    A = KMat.from_seed(q, n, k, rho)
+    A = KMat.uni_from_seed(q, n, k, rho)
 
     prf = PRF(r)
     r = KVec.cbd_from_prf(k, eta1, prf)

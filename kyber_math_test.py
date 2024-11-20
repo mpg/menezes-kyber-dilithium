@@ -55,7 +55,7 @@ class KModPolTest(unittest.TestCase):
             got_s0 = KModPol.cbd_from_prf(eta1, prf)
             self.assertEqual(got_s0, ref_s0)
 
-    def test_from_seed_and_to_bytes(self):
+    def test_uni_from_seed_and_to_bytes(self):
         q, n = 3329, 256
 
         for bits in (512, 768, 1024):
@@ -64,7 +64,7 @@ class KModPolTest(unittest.TestCase):
             rho = get(filename, "ρ")
             exp_i, exp_b = get(filename, "A[0, 0]")
             B = rho + bytes.fromhex("0000")
-            gen = KModPol.from_seed(q, n, B)
+            gen = KModPol.uni_from_seed(q, n, B)
             self.assertEqual(gen, kmodpol(q, n, exp_i))
             self.assertEqual(gen.to_bytes(), exp_b)
 
@@ -142,7 +142,7 @@ class KVecTest(unittest.TestCase):
 
 
 class KMatTest(unittest.TestCase):
-    def test_from_seed_and_to_bytes(self):
+    def test_uni_from_seed_and_to_bytes(self):
         q, n = 3329, 256
 
         for bits, k in ((512, 2), (768, 3), (1024, 4)):
@@ -150,5 +150,5 @@ class KMatTest(unittest.TestCase):
 
             rho = get(filename, "ρ")
             exp = get(filename, "A")
-            got = KMat.from_seed(q, n, k, rho).to_bytes()
+            got = KMat.uni_from_seed(q, n, k, rho).to_bytes()
             self.assertEqual(got, exp)
