@@ -30,17 +30,18 @@ def genkey(d):
 
     t = A @ s + e
 
-    return ((rho, t), s)
+    ek_pke = t.to_bytes() + rho
+    dk_pke = s.to_bytes()
+
+    return (ek_pke, dk_pke)
 
 
-def encrypt(pub, msg, r):
-    """Encrypt msg (list of 0, 1) with "full" Kyber-PKE (slide 66)."""
-    # This is K-PKE.Encrypt except for the parts related to NTT
-    # and (de)serialization of the inputs and outputs.
-    if len(msg) != n or any(b not in (0, 1) for b in msg):
-        raise ValueError
+def encrypt(ek_pke, m, r):
+    """Encrypt m with "full" Kyber-PKE (slide 66)."""
 
-    rho, t = pub
+    t = KVec.from_bytes(ek_pke[: 384 * k])
+    rho = ek_pke[384 * k :]
+
     A = KMat.uni_from_seed(q, n, k, rho)
 
     prf = PRF(r)
@@ -48,23 +49,28 @@ def encrypt(pub, msg, r):
     e1 = KVec.cbd_from_prf(k, eta2, prf)
     e2 = KModPol.cbd_from_prf(eta2, prf)
 
-    mu = KModPol.decompress(q, n, msg, 1)
+    mu = KModPol.decompress_from_bytes(1, m)
 
     u = A.transpose() @ r + e1
     v = t * r + e2 + mu
 
-    c1 = u.compress(du)
-    c2 = v.compress(dv)
+    c1 = u.compress_to_bytes(du)
+    c2 = v.compress_to_bytes(dv)
 
-    return (c1, c2)
+    return c1 + c2
 
 
-def decrypt(prv, ct):
+def decrypt(dk_pke, c):
     """Decrypt ciphertext with "full" Kyber-PKE (slide 66)."""
-    s = prv
-    c1, c2 = ct
+    c1 = c[: 32 * du * k]
+    c2 = c[32 * du * k :]
 
-    uu = KVec.decompress(q, n, c1, du)
-    vv = KModPol.decompress(q, n, c2, dv)
+    ud = KVec.decompress_from_bytes(du, c1)
+    vd = KModPol.decompress_from_bytes(dv, c2)
 
-    return (vv - s * uu).compress(1)
+    s = KVec.from_bytes(dk_pke)
+
+    w = vd - s * ud
+    m = w.compress_to_bytes(1)
+
+    return m
