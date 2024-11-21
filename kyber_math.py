@@ -62,13 +62,6 @@ def ints_from_bytes(d, B):
 class KModInt(ModInt):
     """Modular integer with Kyber extras."""
 
-    @classmethod
-    def cbd_from_bits(cls, eta, bits):
-        """Small (size <= eta) modular integer with CBD from bits."""
-        # This is lines 3, 4 and 5 (rhs) of Algorithm 8 SamplePolyCBD
-        r = sum(bits[:eta]) - sum(bits[eta:])
-        return cls(r, q)
-
     def compress(self, d):
         """Compress (slide 57 or Compress_d eq. (4.7) p. 21)."""
         # round() is not what we want as round(0.5) == 0
@@ -81,24 +74,38 @@ class KModInt(ModInt):
         # See comment on compress().
         return cls(int(0.5 + y * q / 2**d), q)
 
+    @classmethod
+    def cbd_from_bits(cls, eta, bits):
+        """Small (size <= eta) modular integer with CBD from bits."""
+        # This is lines 3, 4 and 5 (rhs) of Algorithm 8 SamplePolyCBD
+        r = sum(bits[:eta]) - sum(bits[eta:])
+        return cls(r, q)
+
 
 class KModPol(ModPol):
     """Element of R_q with Kyber extras."""
 
     coef_cls = KModInt
 
+    def to_bytes(self):
+        """Serialize: ByteEncode_12 from the spec."""
+        return bytes_from_ints(12, (int(c_i) for c_i in self.c))
+
     @classmethod
-    def cbd_from_prf(cls, eta, prf):
-        """Small (size <= eta) element of R_q using CBD from a PRF."""
-        # This is Algorithm 8 SamplePolyCBD_eta, plus the PRF invocation.
-        B = prf.next(eta)
-        assert len(B) == 64 * eta
-        bits = bits_from_bytes(B)
-        c = [
-            cls.coef_cls.cbd_from_bits(eta, bits[i : i + 2 * eta])
-            for i in range(0, len(bits), 2 * eta)
-        ]
-        return cls(q, n, c)
+    def from_bytes(cls, B):
+        """Deserialize: ByteDecode_12 from the spec."""
+        c = ints_from_bytes(12, B)
+        return cls(q, n, [cls.coef_cls(c_i, q) for c_i in c])
+
+    def compress_to_bytes(self, d):
+        """Compress and serialize: ByteEncode_d(Compress_d(self))."""
+        return bytes_from_ints(d, (c_i.compress(d) for c_i in self.c))
+
+    @classmethod
+    def decompress_from_bytes(cls, d, B):
+        """Deserialize and decompress: Decompress_d(ByteDecode_d(B))."""
+        c = ints_from_bytes(d, B)
+        return cls(q, n, [cls.coef_cls.decompress(d, c_i) for c_i in c])
 
     @classmethod
     def uni_from_seed(cls, B):
@@ -123,39 +130,24 @@ class KModPol(ModPol):
 
         return cls(q, n, a)
 
-    def to_bytes(self):
-        """Serialize: ByteEncode_12 from the spec."""
-        return bytes_from_ints(12, (int(c_i) for c_i in self.c))
-
     @classmethod
-    def from_bytes(cls, B):
-        """Deserialize: ByteDecode_12 from the spec."""
-        c = ints_from_bytes(12, B)
-        return cls(q, n, [cls.coef_cls(c_i, q) for c_i in c])
-
-    def compress_to_bytes(self, d):
-        """Compress and serialize: ByteEncode_d(Compress_d(self))."""
-        return bytes_from_ints(d, (c_i.compress(d) for c_i in self.c))
-
-    @classmethod
-    def decompress_from_bytes(cls, d, B):
-        """Deserialize and decompress: Decompress_d(ByteDecode_d(B))."""
-        c = ints_from_bytes(d, B)
-        return cls(q, n, [cls.coef_cls.decompress(d, c_i) for c_i in c])
+    def cbd_from_prf(cls, eta, prf):
+        """Small (size <= eta) element of R_q using CBD from a PRF."""
+        # This is Algorithm 8 SamplePolyCBD_eta, plus the PRF invocation.
+        B = prf.next(eta)
+        assert len(B) == 64 * eta
+        bits = bits_from_bytes(B)
+        c = [
+            cls.coef_cls.cbd_from_bits(eta, bits[i : i + 2 * eta])
+            for i in range(0, len(bits), 2 * eta)
+        ]
+        return cls(q, n, c)
 
 
 class KVec(Vec):
     """Element of R_q^k with Kyber extras."""
 
     item_cls = KModPol
-
-    @classmethod
-    def cbd_from_prf(cls, k, eta, prf):
-        """Generate a pseudo-random CBD small vector from a PRF."""
-        # This is the loops in Algorithm 13 lines 8-11 and 12-15
-        # and Algorithm 14 lines 9-12 and 13-16.
-        v = [cls.item_cls.cbd_from_prf(eta, prf) for _ in range(k)]
-        return cls(v)
 
     def to_bytes(self):
         """Serialize."""
@@ -181,12 +173,24 @@ class KVec(Vec):
         v = [cls.item_cls.decompress_from_bytes(d, chunk) for chunk in chunks]
         return cls(v)
 
+    @classmethod
+    def cbd_from_prf(cls, k, eta, prf):
+        """Generate a pseudo-random CBD small vector from a PRF."""
+        # This is the loops in Algorithm 13 lines 8-11 and 12-15
+        # and Algorithm 14 lines 9-12 and 13-16.
+        v = [cls.item_cls.cbd_from_prf(eta, prf) for _ in range(k)]
+        return cls(v)
+
 
 class KMat(Mat):
     """Matrix of elements of R_q with Kyber extras."""
 
     line_cls = KVec
     item_cls = KModPol
+
+    def to_bytes(self):
+        """Serialize (line-wise, only used in tests)."""
+        return b"".join(l.to_bytes() for l in self.lines)
 
     @classmethod
     def uni_from_seed(cls, k, rho):
@@ -206,7 +210,3 @@ class KMat(Mat):
             a.append(cls.line_cls(a_i))
 
         return cls(a)
-
-    def to_bytes(self):
-        """Serialize (line-wise, only used in tests)."""
-        return b"".join(l.to_bytes() for l in self.lines)

@@ -13,28 +13,6 @@ def kmodpol(c):
 
 
 class KModPolTest(unittest.TestCase):
-    def test_cbd_from_prf(self):
-        for bits, eta1 in ((512, 3), (768, 2), (1024, 2)):
-            filename = f"ML-KEM-{bits}.txt"
-
-            sigma = get(filename, "σ")
-            ref_s0_coef, _ = get(filename, "s[0]")
-            ref_s0 = kmodpol(ref_s0_coef)
-
-            prf = PRF(sigma)
-            got_s0 = KModPol.cbd_from_prf(eta1, prf)
-            self.assertEqual(got_s0, ref_s0)
-
-    def test_uni_from_seed(self):
-        for bits in (512, 768, 1024):
-            filename = f"ML-KEM-{bits}.txt"
-
-            rho = get(filename, "ρ")
-            exp_i, _ = get(filename, "A[0, 0]")
-            B = rho + bytes.fromhex("0000")
-            gen = KModPol.uni_from_seed(B)
-            self.assertEqual(gen, kmodpol(exp_i))
-
     def test_to_bytes_and_from_bytes(self):
         for bits in (512, 768, 1024):
             filename = f"ML-KEM-{bits}.txt"
@@ -65,6 +43,28 @@ class KModPolTest(unittest.TestCase):
 
             got_vd = KModPol.decompress_from_bytes(dv, c2)
             self.assertEqual(got_vd.to_bytes(), ref_vd)
+
+    def test_uni_from_seed(self):
+        for bits in (512, 768, 1024):
+            filename = f"ML-KEM-{bits}.txt"
+
+            rho = get(filename, "ρ")
+            exp_i, _ = get(filename, "A[0, 0]")
+            B = rho + bytes.fromhex("0000")
+            gen = KModPol.uni_from_seed(B)
+            self.assertEqual(gen, kmodpol(exp_i))
+
+    def test_cbd_from_prf(self):
+        for bits, eta1 in ((512, 3), (768, 2), (1024, 2)):
+            filename = f"ML-KEM-{bits}.txt"
+
+            sigma = get(filename, "σ")
+            ref_s0_coef, _ = get(filename, "s[0]")
+            ref_s0 = kmodpol(ref_s0_coef)
+
+            prf = PRF(sigma)
+            got_s0 = KModPol.cbd_from_prf(eta1, prf)
+            self.assertEqual(got_s0, ref_s0)
 
 
 class KVecTest(unittest.TestCase):
