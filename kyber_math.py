@@ -13,11 +13,6 @@ from common_math import ModInt, ModPol, Vec, Mat
 
 from kyber_sym import XOF
 
-# Currently we're in a transitional state because some method take q, n as
-# arguments, and some use the global constants; so we need disting names.
-# When all methods have test cases with the appropriate size, we can make all
-# methods use the global constants instead.
-#
 # Common to all Kyber sizes.
 Q = 3329
 N = 256
@@ -79,13 +74,13 @@ class KModInt(ModInt):
         """Compress (slide 57)."""
         # round() is not what we want as round(0.5) == 0
         # int(0.5 + x) is what we want.
-        return int(0.5 + self.r * 2**d / self.q) % 2**d
+        return int(0.5 + self.r * 2**d / Q) % 2**d
 
     @classmethod
-    def decompress(cls, q, y, d):
+    def decompress(cls, d, y):
         """Decompress (slide 57)."""
         # See comment on compress().
-        return cls(int(0.5 + y * q / 2**d), q)
+        return cls(int(0.5 + y * Q / 2**d), Q)
 
 
 class KModPol(ModPol):
@@ -107,38 +102,30 @@ class KModPol(ModPol):
         return cls(Q, N, c)
 
     @classmethod
-    def uni_from_seed(cls, q, n, B):
+    def uni_from_seed(cls, B):
         """Generate pseudo-random element of R_q based on a seed."""
         # This is essentially Algorithm 7 SampleNTT from the spec.
         # The algorithm in the spec ouputs 256 elements in Z_q, which are
         # meant to be interpreted as a polynomial in the NTT domain.
         # Here we interpret them as a normal polynomial instead because we
         # haven't implemented NTT yet.
-        #
-        # We accept q and n as parameters but the algorithm only makes sense
-        # if q has the expected bit length.
-        if q.bit_length() != 12:
-            raise NotImplementedError
 
         ctx = XOF()
         ctx.absorb(B)
         a = []
-        while len(a) < n:
+        while len(a) < N:
             C = ctx.squeeze(3)
             # pylint: disable-next=unbalanced-tuple-unpacking
             d1, d2 = ints_from_bytes(12, C)
-            if d1 < q:
-                a.append(cls.coef_cls(d1, q))
-            if d2 < q and len(a) < n:
-                a.append(cls.coef_cls(d2, q))
+            if d1 < Q:
+                a.append(cls.coef_cls(d1, Q))
+            if d2 < Q and len(a) < N:
+                a.append(cls.coef_cls(d2, Q))
 
-        return cls(q, n, a)
+        return cls(Q, N, a)
 
     def to_bytes(self):
         """Serialize: ByteEncode_12 from the spec."""
-        if self.q.bit_length() != 12 or self.n % 8 != 0:
-            raise NotImplementedError
-
         return bytes_from_ints(12, (int(c_i) for c_i in self.c))
 
     @classmethod
@@ -155,7 +142,7 @@ class KModPol(ModPol):
     def decompress_from_bytes(cls, d, B):
         """Deserialize and decompress: Decompress_d(ByteDecode_d(B))."""
         c = ints_from_bytes(d, B)
-        return cls(Q, N, [cls.coef_cls.decompress(Q, c_i, d) for c_i in c])
+        return cls(Q, N, [cls.coef_cls.decompress(d, c_i) for c_i in c])
 
 
 class KVec(Vec):
@@ -203,7 +190,7 @@ class KMat(Mat):
     item_cls = KModPol
 
     @classmethod
-    def uni_from_seed(cls, q, n, k, rho):
+    def uni_from_seed(cls, k, rho):
         """Generate pseudo-random square matrix based on a seed."""
         # This is lines 3-7 in Algorithm 13 K-PKE.KeyGen or equivalently
         # lines 4-8 in Algorithm 14 K-PKE.Encrypt in the spec,
@@ -215,7 +202,7 @@ class KMat(Mat):
             a_i = []
             for j in range(k):
                 B = rho + j.to_bytes(1) + i.to_bytes(1)
-                a_ij = cls.item_cls.uni_from_seed(q, n, B)
+                a_ij = cls.item_cls.uni_from_seed(B)
                 a_i.append(a_ij)
             a.append(cls.line_cls(a_i))
 

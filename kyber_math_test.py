@@ -6,46 +6,42 @@ from kyber_sym import PRF
 from test_common import get
 
 
-def kmodpol(q, n, c):
+def kmodpol(c):
     """Helper building a KModPol from a list of int (not KModInt)."""
+    q, n = 3329, 256
     return KModPol(q, n, [KModInt(a, q) for a in c])
 
 
 class KModPolTest(unittest.TestCase):
     def test_cbd_from_prf(self):
-        q, n = 3329, 256
         for bits, eta1 in ((512, 3), (768, 2), (1024, 2)):
             filename = f"ML-KEM-{bits}.txt"
 
             sigma = get(filename, "σ")
             ref_s0_coef, _ = get(filename, "s[0]")
-            ref_s0 = kmodpol(q, n, ref_s0_coef)
+            ref_s0 = kmodpol(ref_s0_coef)
 
             prf = PRF(sigma)
             got_s0 = KModPol.cbd_from_prf(eta1, prf)
             self.assertEqual(got_s0, ref_s0)
 
     def test_uni_from_seed(self):
-        q, n = 3329, 256
-
         for bits in (512, 768, 1024):
             filename = f"ML-KEM-{bits}.txt"
 
             rho = get(filename, "ρ")
             exp_i, _ = get(filename, "A[0, 0]")
             B = rho + bytes.fromhex("0000")
-            gen = KModPol.uni_from_seed(q, n, B)
-            self.assertEqual(gen, kmodpol(q, n, exp_i))
+            gen = KModPol.uni_from_seed(B)
+            self.assertEqual(gen, kmodpol(exp_i))
 
     def test_to_bytes_and_from_bytes(self):
-        q, n = 3329, 256
-
         for bits in (512, 768, 1024):
             filename = f"ML-KEM-{bits}.txt"
 
             for name in "A[0, 0]", "s[0]", "v":
                 coeffs, ref_bytes = get(filename, name)
-                pol = kmodpol(q, n, coeffs)
+                pol = kmodpol(coeffs)
 
                 self.assertEqual(pol.to_bytes(), ref_bytes)
                 self.assertEqual(KModPol.from_bytes(ref_bytes), pol)
@@ -138,12 +134,10 @@ class KVecTest(unittest.TestCase):
 
 class KMatTest(unittest.TestCase):
     def test_uni_from_seed_and_to_bytes(self):
-        q, n = 3329, 256
-
         for bits, k in ((512, 2), (768, 3), (1024, 4)):
             filename = f"ML-KEM-{bits}.txt"
 
             rho = get(filename, "ρ")
             exp = get(filename, "A")
-            got = KMat.uni_from_seed(q, n, k, rho).to_bytes()
+            got = KMat.uni_from_seed(k, rho).to_bytes()
             self.assertEqual(got, exp)

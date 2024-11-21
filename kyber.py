@@ -5,9 +5,6 @@ Implementation of a simplified version of Kyber.
 from kyber_math import KModPol, KVec, KMat
 from kyber_sym import G, PRF
 
-# Kyber (all sizes)
-q = 3329
-n = 256
 # Kyber-768
 k = 3
 eta1 = 2
@@ -23,7 +20,7 @@ def genkey(d):
     rho, sigma = G(d + k.to_bytes(1))
     prf = PRF(sigma)
 
-    A = KMat.uni_from_seed(q, n, k, rho)
+    A = KMat.uni_from_seed(k, rho)
 
     s = KVec.cbd_from_prf(k, eta1, prf)
     e = KVec.cbd_from_prf(k, eta2, prf)
@@ -42,7 +39,7 @@ def encrypt(ek_pke, m, r):
     t = KVec.from_bytes(ek_pke[: 384 * k])
     rho = ek_pke[384 * k :]
 
-    A = KMat.uni_from_seed(q, n, k, rho)
+    A = KMat.uni_from_seed(k, rho)
 
     prf = PRF(r)
     r = KVec.cbd_from_prf(k, eta1, prf)
