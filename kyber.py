@@ -1,5 +1,14 @@
 """
-Implementation of a simplified version of Kyber.
+Implementation of a simplified (no NTT) version of Kyber-PKE.
+
+This is what Kyber-PKE would probably look like if the decision had been made
+not to bake the NTT into the standard. I follow the lectures, and the NTT
+comes at the end, so I won't have a compliant implementation until the end.
+
+Based the spec¹ - except for the parts related to the NTT.
+¹ https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.pdf
+
+For a version closer to the lectures/slides, see previous commits.
 """
 
 from kyber_math import KModPol, KVec, KMat
@@ -14,9 +23,9 @@ dv = 4
 
 
 def genkey(d):
-    """Generate a keypair for "full" Kyber-PKE (slide 65)."""
-    # This is K-PKE.GenKey except for the parts related to NTT
-    # and serialization of the outputs.
+    """Kyber-PKE key generation."""
+    # Algorithm 13 K-PKE.KeyGen
+
     rho, sigma = G(d + k.to_bytes(1))
     prf = PRF(sigma)
 
@@ -34,7 +43,8 @@ def genkey(d):
 
 
 def encrypt(ek_pke, m, r):
-    """Encrypt m with "full" Kyber-PKE (slide 66)."""
+    """Kyber-PKE encryption."""
+    # Algorithm 14 K-PKE.Encrypt
 
     t = KVec.from_bytes(ek_pke[: 384 * k])
     rho = ek_pke[384 * k :]
@@ -58,7 +68,9 @@ def encrypt(ek_pke, m, r):
 
 
 def decrypt(dk_pke, c):
-    """Decrypt ciphertext with "full" Kyber-PKE (slide 66)."""
+    """Kyber-PKE decryption."""
+    # Algorithm 15 K-PKE.Decrypt
+
     c1 = c[: 32 * du * k]
     c2 = c[32 * du * k :]
 

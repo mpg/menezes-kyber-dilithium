@@ -1,12 +1,11 @@
 """
-Extends mathematical objects (from V1b) with Kyber speficic methods.
+Extends mathematical objects (from V1b) with Kyber specific methods.
 
-This will be section 4.2 from the spec¹: conversion and compression
+This is section 4.2 from the spec¹: conversion and compression
 algorithms (4.2.1), as well as sampling algorithms (4.2.2).
-
-Some methods follow the lectures, and mention a slide number.
-Some methods follow the actual ML-KEM spec¹ and mention it.
 ¹ https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.pdf
+
+For a version closer to the lectures/slides, see previous commits.
 """
 
 from common_math import ModInt, ModPol, Vec, Mat
@@ -41,7 +40,7 @@ def bits_from_ints(d, ints):
 
 
 def bytes_from_bits(b):
-    """Algorithm 3 BitsToBytes from the spec (p. 20)."""
+    """Algorithm 3 BitsToBytes spec (p. 20)."""
     return b"".join(x.to_bytes(1) for x in ints_from_bits(8, b))
 
 
@@ -71,14 +70,14 @@ class KModInt(ModInt):
         return cls(r, q)
 
     def compress(self, d):
-        """Compress (slide 57)."""
+        """Compress (slide 57 or Compress_d eq. (4.7) p. 21)."""
         # round() is not what we want as round(0.5) == 0
         # int(0.5 + x) is what we want.
         return int(0.5 + self.r * 2**d / q) % 2**d
 
     @classmethod
     def decompress(cls, d, y):
-        """Decompress (slide 57)."""
+        """Decompress (slide 57 or Decompress_d eq. (4.8) p. 21)."""
         # See comment on compress().
         return cls(int(0.5 + y * q / 2**d), q)
 
