@@ -11,36 +11,6 @@ def kmodpol(q, n, c):
     return KModPol(q, n, [KModInt(a, q) for a in c])
 
 
-class KModIntTest(unittest.TestCase):
-    def test_compress_decompress(self):
-        # slide 58
-        q, d = 19, 2
-        data = [
-            (0, 0, 0),
-            (1, 0, 0),
-            (2, 0, 0),
-            (3, 1, 5),
-            (4, 1, 5),
-            (5, 1, 5),
-            (6, 1, 5),
-            (7, 1, 5),
-            (8, 2, 10),
-            (9, 2, 10),
-            (10, 2, 10),
-            (11, 2, 10),
-            (12, 3, 14),
-            (13, 3, 14),
-            (14, 3, 14),
-            (15, 3, 14),
-            (16, 3, 14),
-            (17, 0, 0),
-            (18, 0, 0),
-        ]
-        for x, y, x1 in data:
-            self.assertEqual(KModInt(x, q).compress(d), y)
-            self.assertEqual(KModInt.decompress(q, y, d), KModInt(x1, q))
-
-
 class KModPolTest(unittest.TestCase):
     def test_cbd_from_prf(self):
         q, n = 3329, 256
@@ -100,42 +70,8 @@ class KModPolTest(unittest.TestCase):
             got_vd = KModPol.decompress_from_bytes(dv, c2)
             self.assertEqual(got_vd.to_bytes(), ref_vd)
 
-    def test_compress_decompress(self):
-        # slides 59 and 60
-        q, n = 3329, 4
-        f = kmodpol(q, n, [223, 1438, 3280, 798])
-
-        g10 = [69, 442, 1009, 245]
-        h10 = kmodpol(q, n, [224, 1437, 3280, 796])
-        self.assertEqual(f.compress(10), g10)
-        self.assertEqual(KModPol.decompress(q, n, g10, 10), h10)
-
-        g4 = [1, 7, 0, 4]
-        h4 = kmodpol(q, n, [208, 1456, 0, 832])
-        self.assertEqual(f.compress(4), g4)
-        self.assertEqual(KModPol.decompress(q, n, g4, 4), h4)
-
 
 class KVecTest(unittest.TestCase):
-    def test_compress_decompress(self):
-        # recycle examples from slide 59 and 60
-        q, n = 3329, 4
-
-        fc = [223, 1438, 3280, 798]
-        f = KVec([kmodpol(q, n, fc), kmodpol(q, n, list(reversed(fc)))])
-
-        data = (
-            (10, [69, 442, 1009, 245], [224, 1437, 3280, 796]),
-            (4, [1, 7, 0, 4], [208, 1456, 0, 832]),
-        )
-
-        for d, g1, hc in data:
-            g = [g1, list(reversed(g1))]
-            self.assertEqual(f.compress(d), g)
-
-            h = KVec([kmodpol(q, n, hc), kmodpol(q, n, list(reversed(hc)))])
-            self.assertEqual(KVec.decompress(q, n, g, d), h)
-
     def test_from_bytes_to_bytes(self):
         for bits in (512, 768, 1024):
             filename = f"ML-KEM-{bits}.txt"

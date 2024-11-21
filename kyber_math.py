@@ -147,10 +147,6 @@ class KModPol(ModPol):
         c = ints_from_bytes(12, B)
         return cls(Q, N, [cls.coef_cls(c_i, Q) for c_i in c])
 
-    def compress(self, d):
-        """Compress (slide 57)."""
-        return [c.compress(d) for c in self.c]
-
     def compress_to_bytes(self, d):
         """Compress and serialize: ByteEncode_d(Compress_d(self))."""
         return bytes_from_ints(d, (c_i.compress(d) for c_i in self.c))
@@ -160,11 +156,6 @@ class KModPol(ModPol):
         """Deserialize and decompress: Decompress_d(ByteDecode_d(B))."""
         c = ints_from_bytes(d, B)
         return cls(Q, N, [cls.coef_cls.decompress(Q, c_i, d) for c_i in c])
-
-    @classmethod
-    def decompress(cls, q, n, c, d):
-        """Decompress (slide 57)."""
-        return cls(q, n, [cls.coef_cls.decompress(q, y, d) for y in c])
 
 
 class KVec(Vec):
@@ -179,10 +170,6 @@ class KVec(Vec):
         # and Algorithm 14 lines 9-12 and 13-16.
         v = [cls.item_cls.cbd_from_prf(eta, prf) for _ in range(k)]
         return cls(v)
-
-    def compress(self, d):
-        """Compress (slide 57)."""
-        return [x.compress(d) for x in self.v]
 
     def to_bytes(self):
         """Serialize."""
@@ -207,11 +194,6 @@ class KVec(Vec):
         chunks = [B[i : i + size] for i in range(0, len(B), size)]
         v = [cls.item_cls.decompress_from_bytes(d, chunk) for chunk in chunks]
         return cls(v)
-
-    @classmethod
-    def decompress(cls, q, n, v, d):
-        """Decompress (slide 57)."""
-        return cls([cls.item_cls.decompress(q, n, c, d) for c in v])
 
 
 class KMat(Mat):
