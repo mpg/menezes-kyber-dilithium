@@ -14,8 +14,8 @@ from common_math import ModInt, ModPol, Vec, Mat
 from kyber_sym import XOF
 
 # Common to all Kyber sizes.
-Q = 3329
-N = 256
+q = 3329
+n = 256
 
 
 def ints_from_bits(d, bits):
@@ -68,19 +68,19 @@ class KModInt(ModInt):
         """Small (size <= eta) modular integer with CBD from bits."""
         # This is lines 3, 4 and 5 (rhs) of Algorithm 8 SamplePolyCBD
         r = sum(bits[:eta]) - sum(bits[eta:])
-        return cls(r, Q)
+        return cls(r, q)
 
     def compress(self, d):
         """Compress (slide 57)."""
         # round() is not what we want as round(0.5) == 0
         # int(0.5 + x) is what we want.
-        return int(0.5 + self.r * 2**d / Q) % 2**d
+        return int(0.5 + self.r * 2**d / q) % 2**d
 
     @classmethod
     def decompress(cls, d, y):
         """Decompress (slide 57)."""
         # See comment on compress().
-        return cls(int(0.5 + y * Q / 2**d), Q)
+        return cls(int(0.5 + y * q / 2**d), q)
 
 
 class KModPol(ModPol):
@@ -99,7 +99,7 @@ class KModPol(ModPol):
             cls.coef_cls.cbd_from_bits(eta, bits[i : i + 2 * eta])
             for i in range(0, len(bits), 2 * eta)
         ]
-        return cls(Q, N, c)
+        return cls(q, n, c)
 
     @classmethod
     def uni_from_seed(cls, B):
@@ -113,16 +113,16 @@ class KModPol(ModPol):
         ctx = XOF()
         ctx.absorb(B)
         a = []
-        while len(a) < N:
+        while len(a) < n:
             C = ctx.squeeze(3)
             # pylint: disable-next=unbalanced-tuple-unpacking
             d1, d2 = ints_from_bytes(12, C)
-            if d1 < Q:
-                a.append(cls.coef_cls(d1, Q))
-            if d2 < Q and len(a) < N:
-                a.append(cls.coef_cls(d2, Q))
+            if d1 < q:
+                a.append(cls.coef_cls(d1, q))
+            if d2 < q and len(a) < n:
+                a.append(cls.coef_cls(d2, q))
 
-        return cls(Q, N, a)
+        return cls(q, n, a)
 
     def to_bytes(self):
         """Serialize: ByteEncode_12 from the spec."""
@@ -132,7 +132,7 @@ class KModPol(ModPol):
     def from_bytes(cls, B):
         """Deserialize: ByteDecode_12 from the spec."""
         c = ints_from_bytes(12, B)
-        return cls(Q, N, [cls.coef_cls(c_i, Q) for c_i in c])
+        return cls(q, n, [cls.coef_cls(c_i, q) for c_i in c])
 
     def compress_to_bytes(self, d):
         """Compress and serialize: ByteEncode_d(Compress_d(self))."""
@@ -142,7 +142,7 @@ class KModPol(ModPol):
     def decompress_from_bytes(cls, d, B):
         """Deserialize and decompress: Decompress_d(ByteDecode_d(B))."""
         c = ints_from_bytes(d, B)
-        return cls(Q, N, [cls.coef_cls.decompress(d, c_i) for c_i in c])
+        return cls(q, n, [cls.coef_cls.decompress(d, c_i) for c_i in c])
 
 
 class KVec(Vec):
