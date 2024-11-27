@@ -55,3 +55,13 @@ def G(c):
     # Also split the output in two, see the text above (4.5)
     g = hashlib.sha3_512(c).digest()
     return g[:32], g[32:]
+
+
+def H(s):
+    """The H function from the spec: section 4.1, page 18, (4.4)."""
+    return hashlib.sha3_256(s).digest()
+
+
+def J(s):
+    """The J function from the spec: section 4.1, page 18, (4.4)."""
+    return hashlib.shake_256(s).digest(32)  # size in bytes (the spec has bits)
