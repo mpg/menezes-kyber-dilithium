@@ -1,7 +1,7 @@
 """
-Implementation of a simplified (no NTT) version of Kyber-PKE.
+Implementation of a simplified (no NTT) version of Kyber.
 
-This is what Kyber-PKE would probably look like if the decision had been made
+This is what Kyber would probably look like if the decision had been made
 not to bake the NTT into the standard. I follow the lectures, and the NTT
 comes at the end, so I won't have a compliant implementation until the end.
 
@@ -11,8 +11,10 @@ Based the spec¹ - except for the parts related to the NTT.
 For a version closer to the lectures/slides, see previous commits.
 """
 
+import secrets
+
 from kyber_math import KModPol, KVec, KMat
-from kyber_sym import G, PRF
+from kyber_sym import PRF, G, H, J
 
 
 class KyberPKE:
@@ -36,7 +38,7 @@ class KyberPKE:
         else:
             raise ValueError
 
-    def genkey(self, d):
+    def keygen(self, d):
         """Kyber-PKE key generation."""
         # Algorithm 13 K-PKE.KeyGen
 
@@ -95,3 +97,68 @@ class KyberPKE:
         m = w.compress_to_bytes(1)
 
         return m
+
+
+class KyberKEM:
+    """A simplified version (no NTT) of the Kyber KEM."""
+
+    def __init__(self, param_set):
+        """Initialize the Kyber KEM with the given parameter set."""
+        self.pke = KyberPKE(param_set)
+
+    def keygen_internal(self, d, z):
+        """Kyber-KEM internal KeyGen."""
+        # Algorithm 16 ML-KEM.KeyGen_internal
+
+        ek_pke, dk_pke = self.pke.keygen(d)
+
+        ek = ek_pke
+        dk = dk_pke + ek + H(ek) + z
+
+        return ek, dk
+
+    def encaps_internal(self, ek, m):
+        """Kyber-KEM internal Encaps."""
+        # Algorithm 17 ML-KEM.Encaps_internal
+
+        K, r = G(m + H(ek))
+        c = self.pke.encrypt(ek, m, r)
+
+        return (K, c)
+
+    def decaps_internal(self, dk, c):
+        """Kyber-KEM internal Decaps."""
+        # Algorithm 18 ML-KEM.Decaps_internal
+
+        k = self.pke.k
+        dk_pke = dk[0 : 384 * k]
+        ek_pke = dk[384 * k : 768 * k + 32]
+        h = dk[768 * k + 32 : 768 * k + 64]
+        z = dk[768 * k + 64 : 768 * k + 96]
+
+        m_prime = self.pke.decrypt(dk_pke, c)
+
+        K_prime, r_prime = G(m_prime + h)
+        c_prime = self.pke.encrypt(ek_pke, m_prime, r_prime)
+        if c_prime != c:
+            return J(z + c)
+
+        return K_prime
+
+    def keygen(self):
+        """Kyber-KEM KeyGen."""
+        # Algorithm 19 ML-KEM.KeyGen
+        d = secrets.token_bytes(32)
+        z = secrets.token_bytes(32)
+        return self.keygen_internal(d, z)
+
+    def encaps(self, ek):
+        """Kyber-KEM Encaps."""
+        # Algorithm 20 ML-KEM.Encaps
+        m = secrets.token_bytes(32)
+        return self.encaps_internal(ek, m)
+
+    def decaps(self, dk, c):
+        """Kyber-KEM Decaps."""
+        # Algorithm 21 ML-KEM.Decaps
+        return self.decaps_internal(dk, c)
